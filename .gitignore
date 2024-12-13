@@ -1,0 +1,28 @@
+# Python-specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Environment variables
+.env 
+
+# Django-specific
+db.sqlite3
+/static/
+media/
+
+# Virtual environments
+venv/
+
+# Logs
+*.log
+
+# Temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# macOS files
+.DS_Store
