@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 from django.db import models
 
 # Hospital Model
@@ -6,7 +6,7 @@ class Hospital(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
 # Base User Model
-class User(AbstractUser):
+class AppUser(models.Model):
     ROLE_CHOICES = [
         ('Admin', 'Admin'),
         ('Doctor', 'Doctor'),
@@ -15,6 +15,7 @@ class User(AbstractUser):
         ('LabTechnician', 'LabTechnician'),
         ('Patient', 'Patient')
     ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     phone_number = models.CharField(max_length=20)
@@ -24,8 +25,8 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 
 # Patient Model
-class Patient(model.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Patient(models.Model):
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
     gender = models.CharField(max_length=10)
     nss = models.CharField(max_length=50, unique=True)
     date_of_birth = models.DateField()
@@ -35,16 +36,16 @@ class Patient(model.Model):
     medical_condition = models.TextField()
     
 # Worker Model
-class Worker(model.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Worker(models.Model):
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
     gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
     place_of_birth = models.CharField(max_length=50)
-    speciality = place_of_birth = models.CharField(max_length=50, unique=True)
+    speciality  = models.CharField(max_length=50, unique=True)
   
 # Admin Model
-class Admin(model.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Admin(models.Model):
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
    
 # Consultation Model
 class Consultation(models.Model):
@@ -54,6 +55,8 @@ class Consultation(models.Model):
     summary = models.TextField()
     notes = models.TextField(blank=True, null=True)   
 
+class Medicine(models.Model):
+    name = models.CharField(max_length=100)
 # Prescription Model
 class Prescription(models.Model):
     consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
@@ -67,8 +70,7 @@ class PrescriptionDetail(models.Model):
     duration = models.CharField(max_length=50)
     instructions = models.TextField(blank=True, null=True)
     
-class Medicine(models.Model):
-    name = models.CharField(max_length=100)
+
 
 
 
@@ -79,14 +81,16 @@ class NurseNote(models.Model):
     actions_taken = models.TextField(blank=True, null=True)
     observations = models.TextField()
 
-class DemandeCerteficat(models.Model):
+class DemandCertificate(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Worker, on_delete=models.CASCADE)
     done = models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
     
-class DemandeFacture(models.Model):
+class DemandFacture(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     done : models.BooleanField(default=False)
     date = models.DateTimeField(auto_now_add=True)
         
+        
+  
