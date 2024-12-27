@@ -80,9 +80,6 @@ class NurseNote(models.Model):
     actions_taken = models.TextField(blank=True, null=True)
     observations = models.TextField()
 
-
-
-
 class BilanRadiologique(models.Model):
     consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
     radiologist = models.ForeignKey(Worker, on_delete=models.CASCADE)
