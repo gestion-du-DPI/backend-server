@@ -5,7 +5,7 @@ from users.models import Patient,Worker
 class Consultation(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     doctor = models.ForeignKey( Worker, on_delete=models.CASCADE)
-    date = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     summary = models.TextField()
     notes = models.TextField(blank=True, null=True)   
     prescription = models.OneToOneField('Prescription', on_delete=models.CASCADE, null=True, blank=True, related_name='prescript')
