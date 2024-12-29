@@ -14,7 +14,7 @@ class Consultation(models.Model):
     reason = models.CharField(max_length=80)
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    resume = models.TextField()
+    resume = models.TextField(blank=True, null=True)
        
     
 

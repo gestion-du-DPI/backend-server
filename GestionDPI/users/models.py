@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 # Hospital Model
 class Hospital(models.Model):
     name = models.CharField(max_length=50, unique=True)
-
+    def __str__(self):
+        return f"{self.name}"
 # Base User Model
 class AppUser(models.Model):
     ROLE_CHOICES = [
@@ -32,20 +33,25 @@ class AppUser(models.Model):
     date_of_birth = models.DateField()
     place_of_birth = models.CharField(max_length=50)
     image = models.ImageField(upload_to='user_images/', blank=True, null=True)
-    
+    def __str__(self):
+        return f"{self.user.first_name}_{self.role}"
 
 class Patient(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
     emergency_contact_name = models.CharField(max_length=20)
     emergency_contact_phone = models.CharField(max_length=20)
     medical_condition = models.TextField()
+    def __str__(self):
+        return f"{self.user.user.first_name}"
     
 class Worker(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
   
     speciality  = models.CharField(max_length=50)
-  
+    def __str__(self):
+        
+        return f"{self.user.user.first_name}_{self.user.role}"
+
 # Admin Model
 class Admin(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
-   
