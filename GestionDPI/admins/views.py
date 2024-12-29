@@ -109,7 +109,7 @@ class CreatePatientView(APIView):
         if not all([  email,first_name,last_name,phone_number,address,gender,nss,date_of_birth,place_of_birth,emergency_contact_name,emergency_contact_phone,medical_condition]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-          username = f'{first_name}{last_name}'
+          username = f'{first_name} {last_name}'
           user = User.objects.create_user(username=username, password=nss, email=email)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True)
@@ -121,7 +121,7 @@ class CreatePatientView(APIView):
           print(f"Error: {str(e)}")
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)
-        return ''
+       
       
 class CreateWorkerView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -141,10 +141,10 @@ class CreateWorkerView(APIView):
         place_of_birth =  data.get('place_of_birth')
         speciality = data.get('speciality')
             
-        if not all([  email,first_name,last_name,role,phone_number,address,gender,nss,date_of_birth,place_of_birth,emergency_contact_name,speciality]):
+        if not all([  email,first_name,last_name,role,phone_number,address,gender,nss,date_of_birth,place_of_birth,speciality]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-          username = f'{first_name}{last_name}'
+          username = f'{first_name} {last_name}'
           user = User.objects.create_user(username=username, password=nss, email=email)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True)
@@ -156,4 +156,4 @@ class CreateWorkerView(APIView):
           print(f"Error: {str(e)}")
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)
-        return ''
+       
