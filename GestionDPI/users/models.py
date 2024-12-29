@@ -38,6 +38,7 @@ class Patient(models.Model):
 # Worker Model
 class Worker(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
+    nss = models.CharField(max_length=50, unique=True)
     gender = models.CharField(max_length=10)
     date_of_birth = models.DateField()
     place_of_birth = models.CharField(max_length=50)
