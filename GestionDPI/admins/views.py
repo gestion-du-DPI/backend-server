@@ -13,6 +13,7 @@ from django.db.models import Count
 from collections import defaultdict
 from calendar import month_name
 from django.contrib.auth.models import User
+from rest_framework import status
 
 
 class AdminOnlyView(APIView):
@@ -87,11 +88,12 @@ class AdminOnlyView(APIView):
         }
        
         return JsonResponse(data)
+      
 class CreatePatientView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request):
-        data = request.json() 
+        data = request.data
 
         email = data.get('email')
         first_name = data.get('first_name')
@@ -109,15 +111,16 @@ class CreatePatientView(APIView):
         if not all([  email,first_name,last_name,phone_number,address,gender,nss,date_of_birth,place_of_birth,emergency_contact_name,emergency_contact_phone,medical_condition]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-          username = f'{first_name} {last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          username = f'{first_name}_{last_name}'
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
-          appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True)
+          appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
-          patient = Patient.objects.create(user=appuser,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth,emergency_contact_name=emergency_contact_name,emergency_contact_phone=emergency_contact_phone,medical_condition=medical_condition)
+          patient = Patient.objects.create(user=appuser,emergency_contact_name=emergency_contact_name,emergency_contact_phone=emergency_contact_phone,medical_condition=medical_condition)
         
         except Exception as e:
-        # Catch any other exceptions
+          if user:
+                user.delete()
           print(f"Error: {str(e)}")
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)
@@ -127,7 +130,7 @@ class CreateWorkerView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request):
-        data = request.json() 
+        data = request.data 
       
         email = data.get('email')
         first_name = data.get('first_name')
@@ -144,15 +147,16 @@ class CreateWorkerView(APIView):
         if not all([  email,first_name,last_name,role,phone_number,address,gender,nss,date_of_birth,place_of_birth,speciality]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-          username = f'{first_name} {last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          username = f'{first_name}_{last_name}'
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
-          appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True)
+          appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
-          Worker = Worker.objects.create(user=appuser,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth,speciality=speciality)
+          worker = Worker.objects.create(user=appuser,speciality=speciality)
         
         except Exception as e:
-        # Catch any other exceptions
+          if user:
+                user.delete()
           print(f"Error: {str(e)}")
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)

@@ -16,5 +16,5 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             del modified_data['email']  
 
         request._full_data = modified_data
-
+        print(modified_data)
         return super().post(request, *args, **kwargs)

@@ -5,19 +5,33 @@ from users.models import Patient,Worker
 class Consultation(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     doctor = models.ForeignKey( Worker, on_delete=models.CASCADE)
+    PRIORITY_CHOICES = [
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('Critical', 'Critical')
+    ]
+    priority = models.CharField(max_length=20,choices=PRIORITY_CHOICES)
+    reason = models.CharField(max_length=80)
+    archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    summary = models.TextField()
-    notes = models.TextField(blank=True, null=True)   
-    prescription = models.OneToOneField('Prescription', on_delete=models.CASCADE, null=True, blank=True, related_name='prescript')
+    resume = models.TextField()
+       
+    
 
 class Medicine(models.Model):
     name = models.CharField(max_length=100)
 
 
 class Prescription(models.Model):
-    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, null= True, related_name='consult')
-    valid = models.BooleanField(default=False)
+    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
+    Status_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Completed', 'Completed'),
+        ('Failed', 'Failed')
+    ]
+    status = models.CharField(max_length=20,choices=Status_CHOICES)
     medicines = models.ManyToManyField(Medicine, through='PrescriptionDetail')
+    notes = models.TextField(blank=True, null=True)
     
 
 class PrescriptionDetail(models.Model):
@@ -27,36 +41,55 @@ class PrescriptionDetail(models.Model):
     duration = models.CharField(max_length=50)
     instructions = models.TextField(blank=True, null=True)
     
-class BilanRadiologique(models.Model):
+class Ticket(models.Model):
     consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
-    radiologist = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    TYPE_CHOICES = [
+        ('Lab', 'Lab'),
+        ('Radio', 'Radio'),
+        ('Nursing', 'Nursing')
+    ]
+    PRIORITY_CHOICES = [
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('Critical', 'Critical')
+    ]
+    type = models.CharField(max_length=20,choices=PRIORITY_CHOICES)
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=255)
-    priority = models.CharField(max_length=10)
-    compteRendu = models.OneToOneField('CompteRendu', on_delete=models.CASCADE, null=True, blank=True)
-  
-class CompteRendu(models.Model):
-    bilan = models.ForeignKey(BilanRadiologique, on_delete=models.CASCADE, null=True)
-    summary = models.TextField(blank=True,null=True)
+    priority = models.CharField(max_length=20,choices=PRIORITY_CHOICES)
     
-class RadioImage(models.Model):
-    compteRendu = models.ForeignKey(CompteRendu, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='radio_images/')  
-    observation = models.CharField(max_length=255, blank=True,null=True)  
-
-class BilanBiologique(models.Model):
-    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
+class LabResult(models.Model):
+    ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
     labtechnician = models.ForeignKey(Worker, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
-    description = models.TextField(max_length=255)
-    priority = models.CharField(max_length=10)
-    
-    
+  
 class LabImage(models.Model):
-    bilan = models.ForeignKey(BilanBiologique, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='bilan_images/')   
+    labresult = models.ForeignKey(LabResult, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='Lab_images/')   
     
 class LabObservation(models.Model):
-    bilan = models.ForeignKey(BilanBiologique, on_delete=models.CASCADE)
-    observation = models.CharField(max_length=255, blank=True,null=True)  
+    labresult = models.ForeignKey(LabResult, on_delete=models.CASCADE)
+    title = models.CharField(max_length=80)  
+    notes = models.TextField(max_length=255, blank=True,null=True)  
+
+class RadioResult(models.Model):
+    ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
+    radiologist = models.ForeignKey(Worker, on_delete=models.CASCADE)
+  
+class RadioImage(models.Model):
+    radioresult = models.ForeignKey(RadioResult, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='Ladio_images/')   
+    
+class RadioObservation(models.Model):
+    radioresult = models.ForeignKey(RadioResult, on_delete=models.CASCADE)
+    title = models.CharField(max_length=80)  
+    notes = models.TextField(max_length=255, blank=True,null=True)  
+    
+class NursingResult(models.Model):
+    ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
+    nurse = models.ForeignKey(Worker, on_delete=models.CASCADE)
+  
+class NursingObservation(models.Model):
+    nursingresult = models.ForeignKey(NursingResult, on_delete=models.CASCADE)
+    title = models.CharField(max_length=80)  
+    notes = models.TextField(max_length=255, blank=True,null=True)  
     

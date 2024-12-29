@@ -15,34 +15,35 @@ class AppUser(models.Model):
         ('LabTechnician', 'LabTechnician'),
         ('Patient', 'Patient')
     ]
+    Gender_CHOICES = [
+        ('Male', 'Male'),
+        ('Female', 'Female')
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    gender = models.CharField(max_length=10,choices=Gender_CHOICES)
     phone_number = models.CharField(max_length=20)
     address = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-# Patient Model
-class Patient(models.Model):
-    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
-    gender = models.CharField(max_length=10)
     nss = models.CharField(max_length=50, unique=True)
     date_of_birth = models.DateField()
     place_of_birth = models.CharField(max_length=50)
+    image = models.ImageField(upload_to='user_images/', blank=True, null=True)
+    
+
+class Patient(models.Model):
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
     emergency_contact_name = models.CharField(max_length=20)
     emergency_contact_phone = models.CharField(max_length=20)
     medical_condition = models.TextField()
     
-# Worker Model
 class Worker(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
-    nss = models.CharField(max_length=50, unique=True)
-    gender = models.CharField(max_length=10)
-    date_of_birth = models.DateField()
-    place_of_birth = models.CharField(max_length=50)
-    speciality  = models.CharField(max_length=50, unique=True)
+  
+    speciality  = models.CharField(max_length=50)
   
 # Admin Model
 class Admin(models.Model):
