@@ -40,7 +40,7 @@ class AdminOnlyView(APIView):
           'nurses': AppUser.objects.filter(role='Nurse', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
           'radiologists': AppUser.objects.filter(role='Radiologist', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
           'lab_technicians': AppUser.objects.filter(role='LabTechnician', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
-          'consultations': Consultation.objects.filter( created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
+          'consultations': Consultation.objects.filter( created_at__gte=three_months_ago).count(),
         }
 
         recent_patients = AppUser.objects.filter(role='Patient',hospital=request.user.appuser.hospital).order_by('-created_at')[:5]
@@ -93,7 +93,7 @@ class AdminOnlyView(APIView):
     }
 
         top_doctors = (
-          Consultation.objects.filter(hospital=request.user.appuser.hospital).values('doctor') 
+          Consultation.objects.filter().values('doctor') 
           .annotate(consultation_count=Count('id'))  
           .order_by('-consultation_count') 
           [:9] 
@@ -144,7 +144,7 @@ class CreatePatientView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -155,7 +155,7 @@ class CreatePatientView(APIView):
                 user.delete()
           print(f"Error: {str(e)}")
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)
+        return JsonResponse({'message': 'User created successfully', 'user_id': appuser.id}, status=201)
        
       
 class CreateWorkerView(APIView):
@@ -180,7 +180,7 @@ class CreateWorkerView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -221,18 +221,19 @@ class GetWorkersList(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        workers = Worker.objects.filter(hospital=request.user.appuser.hospital)
+        worker_roles = ["Doctor","Nurse","Radiologist","Labtechnician"]
+        workers = AppUser.objects.filter(hospital=request.user.appuser.hospital,role__in=worker_roles)
         workers_serialized = [
           {
-              'user_id':worker.user.id,
-              'name': f"{worker.user.user.first_name} {worker.user.user.last_name}",
-              'role':worker.user.role,
-              'speciality':worker.speciality,
-              'email': worker.user.user.email,
-              'phone_number': worker.user.phone_number,
-              'nss':worker.user.nss,
-              'address': worker.user.address,
-              'created_at': worker.user.created_at,
+              'user_id':worker.id,
+              'name': f"{worker.user.first_name} {worker.user.last_name}",
+              'role':worker.role,
+              'speciality':worker.worker.speciality,
+              'email': worker.user.email,
+              'phone_number': worker.phone_number,
+              'nss':worker.nss,
+              'address': worker.address,
+              'created_at': worker.created_at,
           }
           for worker in workers
         ]
@@ -250,7 +251,7 @@ class DeleteUser(APIView):
             raise NotFound(detail="deletion failed.")
         
         user.user.delete()
-        return JsonResponse({'message': 'User deleted successfully', 'user_id': user.id}, status=201)
+        return JsonResponse({'message': 'User deleted successfully'}, status=201)
        
 class ModifyUser(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
