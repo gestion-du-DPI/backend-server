@@ -4,7 +4,7 @@ from users.models import Patient,Worker
 # Consultation Model
 class Consultation(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    doctor = models.ForeignKey( Worker, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Worker, on_delete=models.CASCADE)
     PRIORITY_CHOICES = [
         ('Low', 'Low'),
         ('Medium', 'Medium'),
@@ -53,10 +53,15 @@ class Ticket(models.Model):
         ('Medium', 'Medium'),
         ('Critical', 'Critical')
     ]
-    type = models.CharField(max_length=20,choices=PRIORITY_CHOICES)
+    STATUS_CHOICES = [
+        ('Open', 'Open'),
+        ('Closed', 'Closed')
+    ]
+    type = models.CharField(max_length=20,choices=TYPE_CHOICES)
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=255)
-    priority = models.CharField(max_length=20,choices=PRIORITY_CHOICES)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default= 'Open')
     
 class LabResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)

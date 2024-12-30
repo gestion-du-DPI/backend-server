@@ -1,6 +1,6 @@
-from django.shortcuts import render
 from GestionDPI.permissions import IsAdmin
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import JsonResponse 
@@ -24,7 +24,7 @@ class AdminOnlyView(APIView):
         
        
         
-        
+
         admin_info = {
           'name': f"{user.first_name} {user.last_name}",
           'hospital': user.appuser.hospital.name,
@@ -120,7 +120,7 @@ class AdminOnlyView(APIView):
         }
        
         return JsonResponse(data)
-      
+    
 class CreatePatientView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -144,7 +144,7 @@ class CreatePatientView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
+          user = User.objects.create_user(username=username, password=nss, email=email)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -180,7 +180,7 @@ class CreateWorkerView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
+          user = User.objects.create_user(username=username, password=nss, email=email)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -246,7 +246,7 @@ class DeleteUser(APIView):
     def delete(self, request,pk,format=None):
         try:
             user = AppUser.objects.get(pk=pk)
-        except e:
+        except:
             raise NotFound(detail="deletion failed.")
         
         user.user.delete()
