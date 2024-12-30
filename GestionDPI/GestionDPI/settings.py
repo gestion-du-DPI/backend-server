@@ -98,7 +98,7 @@ DATABASES = {
         'PORT': 16312,
         'OPTIONS': {
             'ssl': {
-                'ca': '../../ca.pem',  
+                'ca': 'ca.pem',  
             },
         },
     }
@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
 
 # Configure JWT settings
 SIMPLE_JWT = {
