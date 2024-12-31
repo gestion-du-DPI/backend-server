@@ -21,5 +21,7 @@ urlpatterns = [
     path('settings/', admin.site.urls),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('admins/',include('admins.urls')),
-    path('lab/', include('labtechnician.urls'))
+    path('lab/', include('labtechnician.urls')),
+    path('patient/',include('patient.urls')),
+    
 ]
