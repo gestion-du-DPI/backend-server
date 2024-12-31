@@ -78,20 +78,21 @@ class AdminOnlyView(APIView):
             .annotate(count=Count('id'))
             .order_by('month')
         )
-
-        stats = {
-        month_name[(six_months_ago + timedelta(days=30 * i)).month]: {
-            'patients': next(
-                (entry['count'] for entry in patient_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
-                0
-            ),
-            'consultations': next(
-                (entry['count'] for entry in consultation_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
-                0
-            ),
-        }
-        for i in range(6)
-    }
+        stats_list =[]
+        for i in range(6):
+          stats_list.append({
+          month_name[(six_months_ago + timedelta(days=30 * i)).month]: {
+              'patients': next(
+                  (entry['count'] for entry in patient_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
+                  0
+              ),
+              'consultations': next(
+                  (entry['count'] for entry in consultation_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
+                  0
+              ),
+          }
+        
+        })
 
         top_doctors = (
           Consultation.objects.filter().values('doctor') 
@@ -116,7 +117,7 @@ class AdminOnlyView(APIView):
           'admin_info':admin_info,
           'role_counts':role_counts,
           'top_staff':top_doctors_serialized,
-          'stats':stats,
+          'stats':stats_list,
           'recent_patients':recent_patients_serialized
         }
        
@@ -298,3 +299,33 @@ class ModifyUser(APIView):
         app_user.save()
         return JsonResponse({'message': 'User modified successfully', 'user_id': app_user.id}, status=201)
       
+import qrcode
+from django.http import HttpResponse
+import io
+
+class GenerateQRView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+      nss = request.data.get('nss')
+      if not nss:
+          return HttpResponse("NSS not provided", status=400)
+      
+      # Generate the QR code
+      qr = qrcode.QRCode(
+          version=1,
+          error_correction=qrcode.constants.ERROR_CORRECT_L,
+          box_size=10,
+          border=4,
+      )
+      qr.add_data(nss)
+      qr.make(fit=True)
+
+      img = qr.make_image(fill_color="black", back_color="white")
+
+      # Convert image to HTTP response
+      buffer = io.BytesIO()
+      img.save(buffer, format='PNG')
+      buffer.seek(0)
+
+      return HttpResponse(buffer, content_type='image/png')
