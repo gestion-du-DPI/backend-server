@@ -23,6 +23,7 @@ class DoctorOnlyView(APIView):
         user = request.user
   
         doctor_info = {
+          'id':user.appuser.id,
           'name': f"{user.first_name} {user.last_name}",
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
@@ -91,17 +92,21 @@ class DoctorOnlyView(APIView):
           for i in range(6)
          }
         recent_consultations_ids= [consultation.id for consultation in recent_consultations]
-        top_tickets =  Ticket.objects.filter(consultation__in=recent_consultations_ids).order_by('-created_at')[:8] 
-       
-        top_tickets_serialized = [
-            {
-                'ticket_id':ticket.id, 
-                'type': ticket.type,
-                'title': ticket.title,
-                'status':ticket.status
-            }
-            for ticket in top_tickets
-        ]
+        top_tickets =  Ticket.objects.filter(consultation__in=recent_consultations_ids).order_by('-created_at')[:8]
+        top_tickets_serialized= [] 
+        for ticket in top_tickets:
+          patient=AppUser.objects.get(id=ticket.consultation.patient.user)
+          
+          top_tickets_serialized.append(
+              {
+                  'ticket_id':ticket.id, 
+                  'type': ticket.type,
+                  'title': ticket.title,
+                  'status':ticket.status,
+                  'priority':ticket.priority,
+              })
+              
+          
        
         
         data = {

@@ -26,6 +26,7 @@ class AdminOnlyView(APIView):
         
 
         admin_info = {
+          'id':user.appuser.id,
           'name': f"{user.first_name} {user.last_name}",
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
