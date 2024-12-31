@@ -14,6 +14,21 @@ from pathlib import Path
 from decouple import config
 import os
 from datetime import timedelta
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dieehryma',
+    'API_KEY': '685162691365716',
+    'API_SECRET': 'eUrhze5iLpk_LfiolQEpj5KvKWE',
+}
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+    api_key=CLOUDINARY_STORAGE['API_KEY'],
+    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -52,6 +67,8 @@ INSTALLED_APPS = [
     'nurse',
     'radiologist',
     'labtechnician',
+    'cloudinary',
+    'cloudinary_storage',
     
 ]
 
@@ -164,3 +181,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
