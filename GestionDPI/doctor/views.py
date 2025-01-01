@@ -28,7 +28,8 @@ class DoctorOnlyView(APIView):
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
           'phone_number':user.appuser.phone_number,
-          'email':user.email
+          'email':user.email,
+          'profile_image':user.appuser.image.url
         }
         
         current_doctor = request.user.appuser.worker
@@ -245,49 +246,6 @@ class ModifyMyUser(APIView):
         print(app_user.image.url)
         return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
               
-class ModifyUser(APIView):
-    permission_classes = [IsAuthenticated, IsDoctor]
-
-   
-    def patch(self, request, pk, format=None):
-        try:
-            app_user = AppUser.objects.get(pk=pk)  
-        except AppUser.DoesNotExist:
-            raise NotFound(detail="AppUser not found.")
-        first_name=request.data.get('first_name')
-        last_name=request.data.get('last_name')
-        hospital_name = request.data.get('hospital_name')
-        gender = request.data.get('gender')
-        nss =request.data.get('nss')
-        address = request.data.get('address')
-        phone_number = request.data.get('phone_number')
-        password = request.data.get('password')
-        email = request.data.get('email')
-        image = request.data.get('image')
-
-        if first_name:
-            app_user.user.first_name = first_name
-        if last_name:
-            app_user.user.last_name = last_name
-        if hospital_name:
-            app_user.hospital.name = hospital_name
-        if gender:
-            app_user.gender = gender
-        if nss:
-            app_user.nss = nss
-        if address:
-            app_user.address = address
-        if phone_number:
-            app_user.phone_number = phone_number
-        if password:
-            app_user.user.set_password(password) 
-        if email:
-            app_user.user.email = email
-        if image:
-            app_user.image = image
-        app_user.user.save()
-        app_user.save()
-        return JsonResponse({'message': 'User modified successfully', 'user_id': app_user.id}, status=201)
 
 class getUserView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]

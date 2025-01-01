@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django.http import JsonResponse 
 from datetime import datetime, timedelta
 from django.utils.timezone import now
-from users.models import AppUser,Patient,Worker
+from users.models import AppUser,Patient,Worker,Hospital
 from doctor.models import Consultation
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
@@ -427,7 +427,9 @@ class ModifyMyUser(APIView):
         if first_name:
             app_user.user.first_name = first_name
         if hospital_name:
-            app_user.hospital.name = hospital_name
+            hospital=Hospital.objects.get(pk=app_user.hospital.id)
+            hospital.name=hospital_name
+            hospital.save()
         if last_name:
             app_user.user.last_name = last_name
         if hospital_name:
