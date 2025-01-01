@@ -1,31 +1,22 @@
 from rest_framework import serializers
+from rest_flex_fields import FlexFieldsModelSerializer
 
-from .models import Worker, Patient, AppUser
-
-
-class DynamicFieldsModelSerializer(serializers.ModelSerializer):
-    """
-    A ModelSerializer that takes an optional `fields` argument during initialization
-    to specify which fields should be included.
-    """
-
-    def __init__(self, *args, **kwargs):
-        # Extract the `fields` argument before calling the parent's __init__
-        fields = kwargs.pop("fields", None)
-        super().__init__(*args, **kwargs)
-
-        if fields:
-            # Drop any fields that are not specified in the `fields` argument
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
+from .models import Worker, Patient, AppUser, User
 
 
-class AppUserSerializer(DynamicFieldsModelSerializer):
+
+class UserSerializer(FlexFieldsModelSerializer):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+
+
+class AppUserSerializer(FlexFieldsModelSerializer):
+
     class Meta:
         model = AppUser
         fields = [
+            "id",
             "user",
             "hospital",
             "role",
@@ -40,21 +31,26 @@ class AppUserSerializer(DynamicFieldsModelSerializer):
             "place_of_birth",
             "image",
         ]
+        expandable_fields = {"user": UserSerializer}
 
 
-class WorkerSerializer(DynamicFieldsModelSerializer):
+class WorkerSerializer(FlexFieldsModelSerializer):
 
     class Meta:
         model = Worker
-        fields = ["speciality"]
+        fields = ["id", "user", "speciality"]
+        expandable_fields = {"user": AppUserSerializer}
 
 
-class PatientSerializer(DynamicFieldsModelSerializer):
+class PatientSerializer(FlexFieldsModelSerializer):
 
     class Meta:
         model = Patient
         fields = [
+            "id",
+            "user",
             "emergency_contact_name",
             "emergency_contact_phone",
             "medical_condition",
         ]
+        expandable_fields = {"user": AppUserSerializer}
