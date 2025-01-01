@@ -57,6 +57,10 @@ class Patient(models.Model):
     def __str__(self):
         return f"{self.user.user.first_name}"
     
+    def number_of_consultations(self):
+        return self.consultation_set.count()
+        
+    
 class Worker(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
   

@@ -8,7 +8,7 @@ from .models import Worker, Patient, AppUser, User
 class UserSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email"]
+        fields = ["id", "first_name", "last_name", "email"]
 
 
 class AppUserSerializer(FlexFieldsModelSerializer):
@@ -44,6 +44,8 @@ class WorkerSerializer(FlexFieldsModelSerializer):
 
 class PatientSerializer(FlexFieldsModelSerializer):
 
+    consultation_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Patient
         fields = [
@@ -52,5 +54,9 @@ class PatientSerializer(FlexFieldsModelSerializer):
             "emergency_contact_name",
             "emergency_contact_phone",
             "medical_condition",
+            "consultation_count"
         ]
         expandable_fields = {"user": AppUserSerializer}
+        
+    def get_consultation_count(self, obj):
+        return obj.number_of_consultations()
