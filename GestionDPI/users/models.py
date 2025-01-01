@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from cloudinary.models import CloudinaryField
+from django.core.exceptions import ValidationError
+
 # Create your models here.
 # Hospital Model
 class Hospital(models.Model):
@@ -36,6 +38,16 @@ class AppUser(models.Model):
     image = CloudinaryField('image', default='default_user')  
     def __str__(self):
         return f"{self.user.first_name}_{self.role}"
+    def clean(self):
+        if self.role not in dict(self.ROLE_CHOICES):
+            raise ValidationError({'role': f"{self.role} is not a valid choice."})
+        if self.gender not in dict(self.Gender_CHOICES):
+            raise ValidationError({"We dont support LGBTQ"})
+
+    def save(self, *args, **kwargs):
+        self.full_clean() 
+        super().save(*args, **kwargs)
+    
 
 class Patient(models.Model):
     user = models.OneToOneField(AppUser, on_delete=models.CASCADE)

@@ -1,6 +1,8 @@
 from django.db import models
 from users.models import Patient,Worker,Hospital
 from cloudinary.models import CloudinaryField
+from django.core.exceptions import ValidationError
+
 # Create your models here.
 # Consultation Model
 class Consultation(models.Model):
@@ -16,6 +18,13 @@ class Consultation(models.Model):
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     resume = models.TextField(blank=True, null=True)
+    def clean(self):
+        if self.priority not in dict(self.PRIORITY_CHOICES):
+            raise ValidationError({'priority': f"{self.priority} is not a valid choice."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean() 
+        super().save(*args, **kwargs)
        
     
 
@@ -33,6 +42,13 @@ class Prescription(models.Model):
     status = models.CharField(max_length=20,choices=Status_CHOICES)
     medicines = models.ManyToManyField(Medicine, through='PrescriptionDetail')
     notes = models.TextField(blank=True, null=True)
+    def clean(self):
+        if self.status not in dict(self.Status_CHOICES):
+            raise ValidationError({'status': f"{self.status} is not a valid choice."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean() 
+        super().save(*args, **kwargs)
     
 
 class PrescriptionDetail(models.Model):
@@ -65,7 +81,17 @@ class Ticket(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default= 'Open')
     created_at = models.DateTimeField(auto_now_add=True)
-
+    def clean(self):
+        if self.type not in dict(self.TYPE_CHOICES)  :
+            raise ValidationError({'type': f"{self.type} is not a valid choice."})
+        if  self.priority not in dict(self.PRIORITY_CHOICES):
+            raise ValidationError({'priority': f"{self.priority} is not a valid choice."})
+        if  self.status not in dict(self.STATUS_CHOICES):
+            raise ValidationError({'status': f"{self.status} is not a valid choice."})
+    def save(self, *args, **kwargs):
+        self.full_clean() 
+        super().save(*args, **kwargs)
+    
     
 class LabResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)

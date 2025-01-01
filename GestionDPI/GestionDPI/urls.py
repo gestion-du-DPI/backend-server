@@ -22,7 +22,7 @@ urlpatterns = [
     path('api/token', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('admin/',include('admins.urls')),
     path('doctor/',include('doctor.urls')),
-    path('lab/', include('labtechnician.urls'))
+    path('lab/', include('labtechnician.urls')),
     path('patient/',include('patient.urls')),
 
 ]
