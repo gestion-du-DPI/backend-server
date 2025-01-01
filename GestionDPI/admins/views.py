@@ -24,8 +24,8 @@ class AdminOnlyView(APIView):
         
        
         workerroles=['Doctor','Radiologist','Labtechnician','Nurse']
-        workercount=AppUser.objects.filter(role__in=workerroles,hospital= user.appuser.hospital.name).count()
-        patientcount=AppUser.objects.filter(role='Patient',hospital= user.appuser.hospital.name).count()
+        workercount=AppUser.objects.filter(role__in=workerroles,hospital= user.appuser.hospital.id).count()
+        patientcount=AppUser.objects.filter(role='Patient',hospital= user.appuser.hospital.id).count()
         admin_info = {
           'id':user.appuser.id,
           'name': f"{user.first_name} {user.last_name}",
