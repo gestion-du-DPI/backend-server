@@ -65,7 +65,7 @@ class Ticket(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default= 'Open')
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     
 class LabResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)

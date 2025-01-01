@@ -118,7 +118,9 @@ DATABASES = {
         'PORT': 16312,
         'OPTIONS': {
             'ssl': {
+
                 'ca': 'ca.pem',  
+
             },
         },
     }

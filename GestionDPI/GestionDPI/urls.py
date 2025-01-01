@@ -23,4 +23,6 @@ urlpatterns = [
     path('admin/',include('admins.urls')),
     path('doctor/',include('doctor.urls')),
     path('lab/', include('labtechnician.urls'))
+    path('patient/',include('patient.urls')),
+
 ]
