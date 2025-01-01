@@ -1,9 +1,12 @@
 from django.urls import path,include
-from doctor.views import DoctorOnlyView
+from doctor.views import DoctorOnlyView,GetPatientView,ModifyMyUser
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('home',DoctorOnlyView.as_view(),name ='doctor_home'),
+    path('getpatient',GetPatientView.as_view(),name ='get_patient'),
+    path('modifymyuser', ModifyMyUser.as_view(), name='myuser_modify'),
+    
    
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

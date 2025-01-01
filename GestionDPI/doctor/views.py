@@ -126,9 +126,10 @@ class GetPatientView(APIView):
 
     def get(self, request):
         nss = request.data.get('nss')
-        patient =Patient.objects.get(nss=nss).appuser
-        consultation_count = patient.consultations.count()
-        data ={
+        patient =AppUser.objects.get(nss=nss).appuser
+       
+        consultation_count = patient.patient.consultation_set.count()
+        data={
               'user_id':patient.id,
               'name': f"{patient.user.first_name} {patient.user.last_name}",
               'created_at': patient.created_at,
@@ -138,9 +139,12 @@ class GetPatientView(APIView):
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
               'emergency_contact_phone':patient.patient.emergency_contact_phone,
-              'medical_condition':patient.patient.medical_condition,
-              'consultation_count':consultation_count
+              'consultation_count':consultation_count,
+              'profile_image':patient.image.url
+              
           }
+          
+        
         return JsonResponse(data)
 class CreateConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
@@ -197,7 +201,50 @@ class CreateTicketView(APIView):
            JsonResponse({'message': 'Ticket created successfully', 'ticket_id': ticket.id}, status=201)
         except:
           return Response("creation failed")
+class ModifyMyUser(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+   
+    def patch(self, request, format=None):
+       
+        app_user = AppUser.objects.get(pk=request.user.appuser.id)  
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        gender = request.data.get('gender')
+        nss =request.data.get('nss')
+        address = request.data.get('address')
+        phone_number = request.data.get('phone_number')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        file = request.FILES.get('image')  
         
+        if file:
+            app_user.image = file  
+        if first_name:
+            app_user.user.first_name = first_name
+        if hospital_name:
+            app_user.hospital.name = hospital_name
+        if last_name:
+            app_user.user.last_name = last_name
+        if gender:
+            app_user.gender = gender
+        if nss:
+            app_user.nss = nss
+        if address:
+            app_user.address = address
+        if phone_number:
+            app_user.phone_number = phone_number
+        if password:
+            app_user.user.set_password(password) 
+        if email:
+            app_user.user.email = email
+    
+        
+        app_user.user.save()
+        app_user.save()
+        print(app_user.image.url)
+        return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
+              
 class ModifyUser(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 

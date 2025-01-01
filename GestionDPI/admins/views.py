@@ -291,7 +291,7 @@ class ModifyPatientView(APIView):
           user = appuser.user
           
           if file:
-             app_user.image = file     
+             appuser.image = file     
        
           if(first_name):
               user.first_name=first_name
@@ -423,9 +423,11 @@ class ModifyMyUser(APIView):
         file = request.FILES.get('image')  
         
         if file:
-            appuser.image = file  
+            app_user.image = file  
         if first_name:
             app_user.user.first_name = first_name
+        if hospital_name:
+            app_user.hospital.name = hospital_name
         if last_name:
             app_user.user.last_name = last_name
         if hospital_name:
