@@ -283,12 +283,16 @@ class ModifyPatientView(APIView):
         emergency_contact_name =  data.get('emergency_contact_name')
         emergency_contact_phone =  data.get('emergency_contact_phone')
         medical_condition= data.get('medical_condition')
-            
-       
+        file = request.FILES.get('image')  
+        
         try:
          
           appuser = AppUser.objects.get(pk=pk)
           user = appuser.user
+          
+          if file:
+             app_user.image = file     
+       
           if(first_name):
               user.first_name=first_name
           if(last_name):
@@ -317,9 +321,10 @@ class ModifyPatientView(APIView):
           if(medical_condition):
              patient.medical_condition=medical_condition
           user.save()
-          patient.save()
           appuser.save()
+          patient.save()
         except Exception as e:
+          print(e)
           return Response({"error": "user already exist"}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'Patient modified successfully', 'user_id': appuser.id}, status=201)
        
@@ -340,10 +345,14 @@ class ModifyWorkerView(APIView):
         place_of_birth =  data.get('place_of_birth')
         speciality =  data.get('speciality')
         role=data.get('role')
-      
+        file = request.FILES.get('image')  
+        
+       
         try:
           appuser = AppUser.objects.get(pk=pk)
           user = appuser.user
+          if file:    
+             app_user.image = file  
           if(first_name):
               user.first_name=first_name
           if(last_name):
@@ -376,7 +385,7 @@ class ModifyWorkerView(APIView):
           worker.save()
         except Exception as e:
           print(e)
-          return Response({"error": "user already exist"}, status=status.HTTP_400_BAD_REQUEST)
+          return Response({"error": f"user already exist , {e}"}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'Worker modified successfully', 'user_id': appuser.id}, status=201)
        
       
