@@ -1,5 +1,6 @@
 from django.db import models
-from users.models import Patient,Worker
+from users.models import Patient,Worker,Hospital
+from cloudinary.models import CloudinaryField
 # Create your models here.
 # Consultation Model
 class Consultation(models.Model):
@@ -43,6 +44,7 @@ class PrescriptionDetail(models.Model):
     
 class Ticket(models.Model):
     consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
+    hospital = models.ForeignKey(Hospital, on_delete=models.CASCADE)
     TYPE_CHOICES = [
         ('Lab', 'Lab'),
         ('Radio', 'Radio'),
@@ -63,6 +65,7 @@ class Ticket(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default= 'Open')
     created_at = models.DateTimeField(auto_now_add=True)
+
     
 class LabResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
@@ -70,7 +73,7 @@ class LabResult(models.Model):
   
 class LabImage(models.Model):
     labresult = models.ForeignKey(LabResult, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='Lab_images/')   
+    image = CloudinaryField('image')  
     
 class LabObservation(models.Model):
     labresult = models.ForeignKey(LabResult, on_delete=models.CASCADE)
@@ -83,7 +86,7 @@ class RadioResult(models.Model):
   
 class RadioImage(models.Model):
     radioresult = models.ForeignKey(RadioResult, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='Ladio_images/')   
+    image = CloudinaryField('image')    
     
 class RadioObservation(models.Model):
     radioresult = models.ForeignKey(RadioResult, on_delete=models.CASCADE)

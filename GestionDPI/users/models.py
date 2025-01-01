@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 # Create your models here.
 # Hospital Model
 class Hospital(models.Model):
@@ -32,7 +33,7 @@ class AppUser(models.Model):
     nss = models.CharField(max_length=50, unique=True)
     date_of_birth = models.DateField()
     place_of_birth = models.CharField(max_length=50)
-    image = models.ImageField(upload_to='user_images/', blank=True, null=True)
+    image = CloudinaryField('image', default='default_user')  
     def __str__(self):
         return f"{self.user.first_name}_{self.role}"
 

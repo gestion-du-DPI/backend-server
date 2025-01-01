@@ -26,11 +26,13 @@ class AdminOnlyView(APIView):
         
 
         admin_info = {
+          'id':user.appuser.id,
           'name': f"{user.first_name} {user.last_name}",
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
           'phone_number':user.appuser.phone_number,
-          'email':user.email
+          'email':user.email,
+          'profile_image':user.appuser.image.url
         }
         
         three_months_ago = now() - timedelta(days=90)
@@ -40,7 +42,7 @@ class AdminOnlyView(APIView):
           'nurses': AppUser.objects.filter(role='Nurse', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
           'radiologists': AppUser.objects.filter(role='Radiologist', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
           'lab_technicians': AppUser.objects.filter(role='LabTechnician', created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
-          'consultations': Consultation.objects.filter( created_at__gte=three_months_ago,hospital=request.user.appuser.hospital).count(),
+          'consultations': Consultation.objects.filter( created_at__gte=three_months_ago).count(),
         }
 
         recent_patients = AppUser.objects.filter(role='Patient',hospital=request.user.appuser.hospital).order_by('-created_at')[:5]
@@ -54,7 +56,8 @@ class AdminOnlyView(APIView):
               'address': patient.address,
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
-              'emergency_contact_phone':patient.patient.emergency_contact_phone
+              'emergency_contact_phone':patient.patient.emergency_contact_phone,
+              'profile_image':patient.image.url
           }
           for patient in recent_patients
         ]
@@ -77,23 +80,24 @@ class AdminOnlyView(APIView):
             .annotate(count=Count('id'))
             .order_by('month')
         )
-
-        stats = {
-        month_name[(six_months_ago + timedelta(days=30 * i)).month]: {
-            'patients': next(
-                (entry['count'] for entry in patient_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
-                0
-            ),
-            'consultations': next(
-                (entry['count'] for entry in consultation_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
-                0
-            ),
-        }
-        for i in range(6)
-    }
+        stats_list =[]
+        for i in range(6):
+          stats_list.append({
+          month_name[(six_months_ago + timedelta(days=30 * i)).month]: {
+              'patients': next(
+                  (entry['count'] for entry in patient_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
+                  0
+              ),
+              'consultations': next(
+                  (entry['count'] for entry in consultation_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
+                  0
+              ),
+          }
+        
+        })
 
         top_doctors = (
-          Consultation.objects.filter(hospital=request.user.appuser.hospital).values('doctor') 
+          Consultation.objects.filter().values('doctor') 
           .annotate(consultation_count=Count('id'))  
           .order_by('-consultation_count') 
           [:9] 
@@ -105,7 +109,8 @@ class AdminOnlyView(APIView):
             {
                 'user_id':doctor.user.id, 
                 'name': f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
-                'role': f"Doctor@{doctor.speciality}"
+                'role': f"Doctor@{doctor.speciality}",
+                'profile_image':doctor.user.image.url
             }
             for doctor in doctors
         ]
@@ -115,7 +120,7 @@ class AdminOnlyView(APIView):
           'admin_info':admin_info,
           'role_counts':role_counts,
           'top_staff':top_doctors_serialized,
-          'stats':stats,
+          'stats':stats_list,
           'recent_patients':recent_patients_serialized
         }
        
@@ -144,7 +149,7 @@ class CreatePatientView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role='Patient',phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -153,9 +158,8 @@ class CreatePatientView(APIView):
         except Exception as e:
           if user:
                 user.delete()
-          print(f"Error: {str(e)}")
-          return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return JsonResponse({'message': 'User created successfully', 'user_id': user.id}, status=201)
+          return Response({"error": "user already exist"}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message': 'User created successfully', 'user_id': appuser.id}, status=201)
        
       
 class CreateWorkerView(APIView):
@@ -180,7 +184,7 @@ class CreateWorkerView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
           username = f'{first_name}_{last_name}'
-          user = User.objects.create_user(username=username, password=nss, email=email)
+          user = User.objects.create_user(username=username, password=nss, email=email,first_name=first_name,last_name=last_name)
           
           appuser = AppUser.objects.create(user=user,hospital=request.user.appuser.hospital,role=role,phone_number=phone_number,address=address,is_active=True,gender=gender,nss=nss,date_of_birth=date_of_birth,place_of_birth=place_of_birth)
           
@@ -198,6 +202,7 @@ class GetPatientsList(APIView):
 
     def get(self, request):
         patients = AppUser.objects.filter(role='Patient',hospital=request.user.appuser.hospital)
+        consultation_count = patient.consultations.count()
         patients_serialized = [
           {
               'user_id':patient.id,
@@ -208,7 +213,10 @@ class GetPatientsList(APIView):
               'address': patient.address,
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
-              'emergency_contact_phone':patient.patient.emergency_contact_phone
+              'emergency_contact_phone':patient.patient.emergency_contact_phone,
+              'consultation_count':consultation_count,
+              'profile_image':patient.image.url
+              
           }
           for patient in patients
         ]
@@ -221,18 +229,20 @@ class GetWorkersList(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        workers = Worker.objects.filter(hospital=request.user.appuser.hospital)
+        worker_roles = ["Doctor","Nurse","Radiologist","Labtechnician"]
+        workers = AppUser.objects.filter(hospital=request.user.appuser.hospital,role__in=worker_roles)
         workers_serialized = [
           {
-              'user_id':worker.user.id,
-              'name': f"{worker.user.user.first_name} {worker.user.user.last_name}",
-              'role':worker.user.role,
-              'speciality':worker.speciality,
-              'email': worker.user.user.email,
-              'phone_number': worker.user.phone_number,
-              'nss':worker.user.nss,
-              'address': worker.user.address,
-              'created_at': worker.user.created_at,
+              'user_id':worker.id,
+              'name': f"{worker.user.first_name} {worker.user.last_name}",
+              'role':worker.role,
+              'speciality':worker.worker.speciality,
+              'email': worker.user.email,
+              'phone_number': worker.phone_number,
+              'nss':worker.nss,
+              'address': worker.address,
+              'created_at': worker.created_at,
+              'profile_image':worker.image.url
           }
           for worker in workers
         ]
@@ -250,7 +260,7 @@ class DeleteUser(APIView):
             raise NotFound(detail="deletion failed.")
         
         user.user.delete()
-        return JsonResponse({'message': 'User deleted successfully', 'user_id': user.id}, status=201)
+        return JsonResponse({'message': 'User deleted successfully'}, status=201)
        
 class ModifyUser(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -270,8 +280,10 @@ class ModifyUser(APIView):
         phone_number = request.data.get('phone_number')
         password = request.data.get('password')
         email = request.data.get('email')
-        image = request.data.get('image')
-
+        file = request.FILES.get('image')  
+        
+        if file:
+            app_user.image = file  
         if first_name:
             app_user.user.first_name = first_name
         if last_name:
@@ -290,9 +302,99 @@ class ModifyUser(APIView):
             app_user.user.set_password(password) 
         if email:
             app_user.user.email = email
-        if image:
-            app_user.image = image
+     
+        
         app_user.user.save()
         app_user.save()
         return JsonResponse({'message': 'User modified successfully', 'user_id': app_user.id}, status=201)
       
+class ModifyMyUser(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+   
+    def patch(self, request, format=None):
+       
+        app_user = AppUser.objects.get(pk=request.user.appuser.id)  
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        hospital_name = request.data.get('hospital_name')
+        nss =request.data.get('nss')
+        address = request.data.get('address')
+        phone_number = request.data.get('phone_number')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        file = request.FILES.get('image')  
+        
+        if file:
+            print('nigga')
+            print('Received file:', file.name)
+            app_user.image = file  
+        if first_name:
+            app_user.user.first_name = first_name
+        if last_name:
+            app_user.user.last_name = last_name
+        if hospital_name:
+            app_user.hospital.name = hospital_name
+        if nss:
+            app_user.nss = nss
+        if address:
+            app_user.address = address
+        if phone_number:
+            app_user.phone_number = phone_number
+        if password:
+            app_user.user.set_password(password) 
+        if email:
+            app_user.user.email = email
+    
+        
+        app_user.user.save()
+        app_user.save()
+        print(app_user.image.url)
+        return JsonResponse({'message': 'User modified successfully', 'user_id': app_user.id}, status=201)
+      
+
+class GenerateQRView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+      nss = request.data.get('nss')
+      if not nss:
+          return HttpResponse("NSS not provided", status=400)
+      
+      # Generate the QR code
+      qr = qrcode.QRCode(
+          version=1,
+          error_correction=qrcode.constants.ERROR_CORRECT_L,
+          box_size=10,
+          border=4,
+      )
+      qr.add_data(nss)
+      qr.make(fit=True)
+
+      img = qr.make_image(fill_color="black", back_color="white")
+
+      # Convert image to HTTP response
+      buffer = io.BytesIO()
+      img.save(buffer, format='PNG')
+      buffer.seek(0)
+
+      return HttpResponse(buffer, content_type='image/png')
+    
+class getUserView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        app_user=request.user.appuser
+        def dispatch(self, request, *args, **kwargs):
+            return super().dispatch(request, *args, **kwargs)
+        data={
+          "first_name":app_user.user.first_name,
+          "last_name": app_user.user.last_name,
+          "hospital" : app_user.hospital.name,
+          "nss" :app_user.nss,
+          "address" : app_user.address,
+          "phone_number" :app_user.phone_number,
+          "profile_image":app_user.image.url
+
+        }
+        return JsonResponse(data)

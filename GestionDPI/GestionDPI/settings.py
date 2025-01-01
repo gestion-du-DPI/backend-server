@@ -14,6 +14,21 @@ from pathlib import Path
 from decouple import config
 import os
 from datetime import timedelta
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dieehryma',
+    'API_KEY': '685162691365716',
+    'API_SECRET': 'eUrhze5iLpk_LfiolQEpj5KvKWE',
+}
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+    api_key=CLOUDINARY_STORAGE['API_KEY'],
+    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +43,7 @@ SECRET_KEY = 'django-insecure-+sw4r1fj#syrdse1x58rqtc*04_yn!_yu8i^49skz3&_*0f6*!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 # MEDIA CONFIGURATION
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -44,6 +59,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'users',
     'admins',
     'patient',
@@ -51,18 +67,22 @@ INSTALLED_APPS = [
     'nurse',
     'radiologist',
     'labtechnician',
+    'cloudinary',
+    'cloudinary_storage',
     
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'GestionDPI.urls'
 
@@ -98,7 +118,9 @@ DATABASES = {
         'PORT': 16312,
         'OPTIONS': {
             'ssl': {
-                'ca': os.path.join(BASE_DIR.parent, 'ca.pem'),  
+
+                'ca': 'ca.pem',  
+
             },
         },
     }
@@ -127,6 +149,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
 
 # Configure JWT settings
 SIMPLE_JWT = {
@@ -160,3 +183,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

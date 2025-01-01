@@ -19,9 +19,10 @@ from django.urls import path, include
 from GestionDPI.views import CustomTokenObtainPairView
 urlpatterns = [
     path('settings/', admin.site.urls),
-    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('admins/',include('admins.urls')),
-    path('lab/', include('labtechnician.urls')),
+    path('api/token', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('admin/',include('admins.urls')),
+    path('doctor/',include('doctor.urls')),
+    path('lab/', include('labtechnician.urls'))
     path('patient/',include('patient.urls')),
-    
+
 ]
