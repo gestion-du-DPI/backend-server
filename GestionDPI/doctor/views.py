@@ -158,7 +158,7 @@ class CreateConultationView(APIView):
         if not all([ patient_id,priority,reason]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-           consultation =Consultation.objects.create(patient=patient_id,doctor=doctor_id,priority=priority,reason=reason,archived=False)
+           consultation =Consultation.objects.create(patient=patient_id,doctor=doctor_id,priority=priority,reason=reason,archived=False,resume="")
            JsonResponse({'message': 'Consutation created successfully', 'consultation_id': consultation.id}, status=201)
         except:
           return Response("creation failed")

@@ -23,8 +23,9 @@ class AdminOnlyView(APIView):
         user = request.user
         
        
-        
-
+        workerroles=['Doctor','Radiologist','Labtechnician','Nurse']
+        workercount=AppUser.objects.filter(role__in=workerroles,hospital= user.appuser.hospital.name).count()
+        patientcount=AppUser.objects.filter(role='Patient',hospital= user.appuser.hospital.name).count()
         admin_info = {
           'id':user.appuser.id,
           'name': f"{user.first_name} {user.last_name}",
@@ -32,7 +33,9 @@ class AdminOnlyView(APIView):
           'address': user.appuser.address,
           'phone_number':user.appuser.phone_number,
           'email':user.email,
-          'profile_image':user.appuser.image.url
+          'profile_image':user.appuser.image.url,
+          'workers_count':workercount,
+          'patients_count':patientcount
         }
         
         three_months_ago = now() - timedelta(days=90)
