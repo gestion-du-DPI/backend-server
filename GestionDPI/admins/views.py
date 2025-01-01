@@ -31,7 +31,8 @@ class AdminOnlyView(APIView):
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
           'phone_number':user.appuser.phone_number,
-          'email':user.email
+          'email':user.email,
+          'profile_image':user.appuser.image.url
         }
         
         three_months_ago = now() - timedelta(days=90)
@@ -55,7 +56,8 @@ class AdminOnlyView(APIView):
               'address': patient.address,
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
-              'emergency_contact_phone':patient.patient.emergency_contact_phone
+              'emergency_contact_phone':patient.patient.emergency_contact_phone,
+              'profile_image':patient.image.url
           }
           for patient in recent_patients
         ]
@@ -107,7 +109,8 @@ class AdminOnlyView(APIView):
             {
                 'user_id':doctor.user.id, 
                 'name': f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
-                'role': f"Doctor@{doctor.speciality}"
+                'role': f"Doctor@{doctor.speciality}",
+                'profile_image':doctor.user.image.url
             }
             for doctor in doctors
         ]
@@ -211,7 +214,8 @@ class GetPatientsList(APIView):
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
               'emergency_contact_phone':patient.patient.emergency_contact_phone,
-              'consultation_count':consultation_count
+              'consultation_count':consultation_count,
+              'profile_image':patient.image.url
               
           }
           for patient in patients
@@ -238,6 +242,7 @@ class GetWorkersList(APIView):
               'nss':worker.nss,
               'address': worker.address,
               'created_at': worker.created_at,
+              'profile_image':worker.image.url
           }
           for worker in workers
         ]
