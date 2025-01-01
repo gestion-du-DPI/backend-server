@@ -352,7 +352,7 @@ class ModifyWorkerView(APIView):
           appuser = AppUser.objects.get(pk=pk)
           user = appuser.user
           if file:    
-             app_user.image = file  
+             appuser.image = file  
           if(first_name):
               user.first_name=first_name
           if(last_name):
@@ -423,9 +423,7 @@ class ModifyMyUser(APIView):
         file = request.FILES.get('image')  
         
         if file:
-            print('nigga')
-            print('Received file:', file.name)
-            app_user.image = file  
+            appuser.image = file  
         if first_name:
             app_user.user.first_name = first_name
         if last_name:
