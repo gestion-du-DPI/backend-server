@@ -14,7 +14,9 @@ from collections import defaultdict
 from calendar import month_name
 from django.contrib.auth.models import User
 from rest_framework import status
-
+import qrcode
+from django.http import HttpResponse
+import io
 
 class AdminOnlyView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]

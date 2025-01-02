@@ -121,6 +121,35 @@ class DoctorOnlyView(APIView):
         }
        
         return JsonResponse(data)
+class GetPatientsList(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        patients = AppUser.objects.filter(role='Patient',hospital=request.user.appuser.hospital)
+        patients_serialized=[]
+        for patient in patients:
+          consultation_count = patient.patient.consultation_set.count()
+          patients_serialized.append(
+          {
+              'user_id':patient.id,
+              'name': f"{patient.user.first_name} {patient.user.last_name}",
+              'created_at': patient.created_at,
+              'nss':patient.nss,
+              'email': patient.user.email,
+              'address': patient.address,
+              'phone_number': patient.phone_number,
+              'emergency_contact_name':patient.patient.emergency_contact_name,
+              'emergency_contact_phone':patient.patient.emergency_contact_phone,
+              'consultation_count':consultation_count,
+              'profile_image':patient.image.url
+              
+          }
+          
+        )
+       
+       
+        return JsonResponse({"patients":patients_serialized}, status=200)
+      
   
 class GetPatientView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
@@ -181,9 +210,72 @@ class getConultationView(APIView):
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
               'emergency_contact_phone':patient.patient.emergency_contact_phone,
-              'resume':consultation.resume
+              'resume':consultation.resume,
+              'archived':consultation.archived
           }
         return JsonResponse(data)
+class getAttachmentsView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        doctor_id = request.user.appuser.id
+        consultation = Consultation.objects.get(id=request.data.get('consultation_id'))
+        results_serialized = []
+
+        # Lab Results
+        lab_results = LabResult.objects.filter(ticket__consultation=consultation)
+        for result in lab_results:
+            for image in result.labimage_set.all():
+                
+                results_serialized.append({
+                    'type': 'Lab',
+                    'lab_technician': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'image': image.image.url ,
+                   
+                })
+            for obs in result.labobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'Lab',
+                    'lab_technician': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'observation': [
+                        {'title': obs.title, 'notes': obs.notes} 
+                    ],
+                })
+
+        # Radio Results
+        radio_results = RadioResult.objects.filter(ticket__consultation=consultation)
+        for result in radio_results:
+             for image in result.radioimage_set.all():
+                
+                results_serialized.append({
+                    'type': 'Radio',
+                    'radiologist': f"{result.labtechnician.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'image': image.image.url ,
+                   
+                })
+             for obs in result.radioobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'Radio',
+                    'radiologist': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'observation': [
+                        {'title': obs.title, 'notes': obs.notes} 
+                    ],
+                })
+
+
+        # Nursing Results
+        nursing_results = NursingResult.objects.filter(ticket__consultation=consultation)
+        for result in nursing_results:
+             for obs in result.nursingobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'Nursing',
+                    'nurse': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
+                    'observation': [
+                        {'title': obs.title, 'notes': obs.notes} 
+                    ],
+                })
+
+        return JsonResponse(results_serialized)
       
 class CreateTicketView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
@@ -247,21 +339,3 @@ class ModifyMyUser(APIView):
         return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
               
 
-class getUserView(APIView):
-    permission_classes = [IsAuthenticated, IsDoctor]
-
-    def get(self, request):
-        app_user=request.user.appuser
-        def dispatch(self, request, *args, **kwargs):
-            return super().dispatch(request, *args, **kwargs)
-        data={
-          "first_name":app_user.user.first_name,
-          "last_name": app_user.user.last_name,
-          "gender" : app_user.gender,
-          "nss" :app_user.nss,
-          "address" : app_user.address,
-          "phone_number" :app_user.phone_number,
-
-        }
-        return JsonResponse(data)
-        
