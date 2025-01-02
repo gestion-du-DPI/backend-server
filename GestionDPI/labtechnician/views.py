@@ -14,7 +14,7 @@ import cloudinary
 from django.core.paginator import Paginator
 
 
-class GetAllLabTicketsView(APIView):
+class GetOpenTicketsView(APIView):
     permission_classes = [IsLabTechnician]
 
     def get(self, request):
@@ -104,6 +104,7 @@ class SubmitResult(APIView):
         )
 
         ticket.status = "Closed"
+        ticket.save()
 
         return Response(status=rest_framework.status.HTTP_200_OK)
 
@@ -299,19 +300,20 @@ class GetPatientByNSS(APIView):
             ],
             expand=["user.user"],
         )
-        
+
         return Response(
             patient_ser.data,
             status=rest_framework.status.HTTP_200_OK,
         )
-        
-class GetTicketListView(APIView):
+
+
+class GetTicketHistoryView(APIView):
     permission_classes = [IsLabTechnician]
 
     def get(self, request):
         # Filter tickets by the hospital of the current user
         tickets = Ticket.objects.filter(
-            hospital=request.user.appuser.hospital
+            hospital=request.user.appuser.hospital, type="Lab", status= 'Closed'
         ).order_by("id")
 
         # Initialize paginator with 10 patients per page
@@ -336,7 +338,24 @@ class GetTicketListView(APIView):
         # Serialize the list of patients
         ticket_ser = TicketSerializer(
             tickets_list,
-            many=True
+            fields= [
+                "id",
+                "title",
+                "priority",
+                "worker",
+                "consultation.doctor",
+                "consultation.doctor.id",
+                "consultation.doctor.user.id",
+                "consultation.doctor.user.user",
+                "consultation.patient",
+                "consultation.patient.id",
+                "consultation.patient.user.id",
+                "consultation.patient.user.user",
+                "consultation.id",
+                "created_at"
+            ],
+            expand=["consultation.doctor.user.user", "consultation.patient.user.user"],
+            many=True,
         )
 
         return Response(
@@ -356,7 +375,9 @@ class GetTicketByID(APIView):
     def get(self, request, id):
 
         try:
-            ticket = Ticket.objects.get(id=id)
+            ticket = Ticket.objects.get(
+                id=id, hospital=request.user.appuser.hospital, type="Lab", status= 'Closed'
+            )
         except Ticket.DoesNotExist as e:
             return Response(
                 e.__str__(), status=rest_framework.status.HTTP_404_NOT_FOUND
@@ -392,11 +413,10 @@ class GetTicketByID(APIView):
                 "consultation.doctor.user.is_active",
                 "consultation.doctor.user.image",
             ],
-            expand=["consultation.doctor.user.user", "consultation.patient.user.user"]
+            expand=["consultation.doctor.user.user", "consultation.patient.user.user"],
         )
-        
+
         return Response(
             ticket_ser.data,
             status=rest_framework.status.HTTP_200_OK,
         )
-

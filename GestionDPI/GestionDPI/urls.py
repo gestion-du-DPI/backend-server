@@ -23,7 +23,8 @@ urlpatterns = [
     path('admin/',include('admins.urls')),
     path('doctor/',include('doctor.urls')),
     path('lab/', include('labtechnician.urls')),
-    path('Radio/', include('radiologist.urls')),
+    path('radio/', include('radiologist.urls')),
+    path('nurse/', include('nurse.urls')),
     path('patient/',include('patient.urls')),
 
 ]
