@@ -13,6 +13,8 @@ urlpatterns = [
     path('get_patient/<str:nss>', view= views.GetPatientByNSS.as_view()),
     path('get_ticket_history', view= views.GetTicketHistoryView.as_view()),
     path('get_ticket/<int:id>', view= views.GetTicketByID.as_view()),
+    path('modifymyuser/', views.ModifyMyUser.as_view(), name='myuser_modify'),
+    path('myuser/', views.getUserView.as_view(), name='user_info'),
 ]
 
 if settings.DEBUG:

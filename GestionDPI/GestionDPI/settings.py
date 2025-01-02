@@ -119,7 +119,7 @@ DATABASES = {
         'OPTIONS': {
             'ssl': {
 
-                'ca': 'ca.pem',  
+                'ca': os.path.join(BASE_DIR.parent, 'ca.pem'),   
 
             },
         },

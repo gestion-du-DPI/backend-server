@@ -12,6 +12,7 @@ from users.serializers import *
 from GestionDPI.permissions import IsRadiologist
 import cloudinary
 from django.core.paginator import Paginator
+from django.http import JsonResponse 
 
 
 class GetOpenTicketsView(APIView):
@@ -419,3 +420,60 @@ class GetTicketByID(APIView):
             ticket_ser.data,
             status=rest_framework.status.HTTP_200_OK,
         )
+        
+class getUserView(APIView):
+    permission_classes = [IsRadiologist]
+
+    def get(self, request):
+        app_user=request.user.appuser
+        def dispatch(self, request, *args, **kwargs):
+            return super().dispatch(request, *args, **kwargs)
+        data={
+          "first_name":app_user.user.first_name,
+          "last_name": app_user.user.last_name,
+          "gender" : app_user.gender,
+          "nss" :app_user.nss,
+          "address" : app_user.address,
+          "phone_number" :app_user.phone_number,
+          "profile_image":app_user.image.url
+
+        }
+        return JsonResponse(data)
+    
+class ModifyMyUser(APIView):
+    permission_classes = [IsRadiologist]
+
+   
+    def patch(self, request, format=None):
+       
+        app_user = AppUser.objects.get(pk=request.user.appuser.id)  
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        nss =request.data.get('nss')
+        address = request.data.get('address')
+        phone_number = request.data.get('phone_number')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        file = request.FILES.get('image')  
+        
+        if file:
+            app_user.image = file  
+        if first_name:
+            app_user.user.first_name = first_name
+        if last_name:
+            app_user.user.last_name = last_name
+        if nss:
+            app_user.nss = nss
+        if address:
+            app_user.address = address
+        if phone_number:
+            app_user.phone_number = phone_number
+        if password:
+            app_user.user.set_password(password) 
+        if email:
+            app_user.user.email = email
+        app_user.user.save()
+        app_user.save()
+        print(app_user.image.url)
+        return JsonResponse({'message': 'Radiologist modified successfully', 'user_id': app_user.id}, status=201)
+      
