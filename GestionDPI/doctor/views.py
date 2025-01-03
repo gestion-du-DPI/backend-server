@@ -13,7 +13,9 @@ from django.db.models import Count
 from calendar import month_name
 from django.contrib.auth.models import User
 from rest_framework import status
-
+import qrcode
+from django.http import HttpResponse
+import io
 
 
 class DoctorOnlyView(APIView):
@@ -574,3 +576,30 @@ class ModifyMyUser(APIView):
         return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
               
 
+class GenerateQRView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+      nss = request.data.get('nss')
+      if not nss:
+          return HttpResponse("NSS not provided", status=400)
+      
+      # Generate the QR code
+      qr = qrcode.QRCode(
+          version=1,
+          error_correction=qrcode.constants.ERROR_CORRECT_L,
+          box_size=10,
+          border=4,
+      )
+      qr.add_data(nss)
+      qr.make(fit=True)
+
+      img = qr.make_image(fill_color="black", back_color="white")
+
+      # Convert image to HTTP response
+      buffer = io.BytesIO()
+      img.save(buffer, format='PNG')
+      buffer.seek(0)
+
+      return HttpResponse(buffer, content_type='image/png')
+    

@@ -16,7 +16,8 @@ from doctor.views import (
     GetRadioImageView,
     GetRadioObservationView,
     GetLabObservationView,
-    GetNurseObservationView
+    GetNurseObservationView,
+    GenerateQRView
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -38,5 +39,6 @@ urlpatterns = [
     path('radio/image/<int:id>', GetRadioImageView.as_view(), name='get_radio_image'),
     path('radio/observation/<int:id>', GetRadioObservationView.as_view(), name='get_radio_observation'),
     path('lab/observation/<int:id>', GetLabObservationView.as_view(), name='get_lab_observation'),
-    path('nurse/observation/<int:id>', GetNurseObservationView.as_view(), name='get_nurse_observation')
+    path('nurse/observation/<int:id>', GetNurseObservationView.as_view(), name='get_nurse_observation'),
+     path('getqr',GenerateQRView.as_view(),name='generate_qr')
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
