@@ -42,6 +42,7 @@ class Prescription(models.Model):
     status = models.CharField(max_length=20,choices=Status_CHOICES)
     medicines = models.ManyToManyField(Medicine, through='PrescriptionDetail')
     notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     def clean(self):
         if self.status not in dict(self.Status_CHOICES):
             raise ValidationError({'status': f"{self.status} is not a valid choice."})
@@ -56,6 +57,7 @@ class PrescriptionDetail(models.Model):
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE)
     dosage = models.CharField(max_length=50)
     duration = models.CharField(max_length=50)
+    frequency = models.CharField(max_length=50)
     instructions = models.TextField(blank=True, null=True)
     
 class Ticket(models.Model):

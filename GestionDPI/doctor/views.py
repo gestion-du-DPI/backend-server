@@ -4,10 +4,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import JsonResponse 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,date
 from django.utils.timezone import now
 from users.models import AppUser,Patient,Worker
-from doctor.models import Consultation,Ticket
+from doctor.models import Consultation,Ticket,Prescription,PrescriptionDetail,Medicine,LabResult,LabImage,LabObservation,RadioImage,RadioObservation,RadioResult,NursingObservation,NursingResult
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
 from calendar import month_name
@@ -187,7 +187,7 @@ class CreateConultationView(APIView):
         if not all([ patient_id,priority,reason]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-           consultation =Consultation.objects.create(patient=patient_id,doctor=doctor_id,priority=priority,reason=reason,archived=False,resume="")
+           consultation =Consultation.objects.create(patient_id=patient_id,docto_id=doctor_id,priority=priority,reason=reason,archived=False,resume="")
            JsonResponse({'message': 'Consutation created successfully', 'consultation_id': consultation.id}, status=201)
         except:
           return Response("creation failed")
@@ -294,6 +294,80 @@ class CreateTicketView(APIView):
            JsonResponse({'message': 'Ticket created successfully', 'ticket_id': ticket.id}, status=201)
         except:
           return Response("creation failed")
+
+class CreatePrescriptionView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def post(self, request):
+        consultation_id = request.data.get('consultation_id')
+        status = 'Pending'
+        medicines_list = request.data.get("medicines_list")
+        notes = request.data.get("notes")
+        
+        if not all([ consultation_id,status,medicines_list,notes]):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        try:
+           prescription =Prescription.objects.create(consultation=consultation_id,status=status,notes=notes)
+           for medicine_detail in medicines_list:
+               medicine = Medicine.objects.create(name=medicine_detail['name'])
+               prescription_detail=PrescriptionDetail.objects.create(prescription=prescription,medicine=medicine,dosage=medicine_detail['dosage'],duration=medicine_detail['duration'],instructions=medicine_detail['instructions'],frequency=medicine_detail['frequency'])
+           JsonResponse({'message': 'Prescription created successfully', 'prescription_id': prescription.id}, status=201)
+        except:
+          return Response("creation failed")
+class ArchiveConsultationView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def post(self, request):
+        consultation_id = request.data.get('consultation_id')
+        resume = request.data.get('resume')
+        
+        if not all([ consultation_id,resume]):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+       
+        try:
+           consultation = Consultation.objects.get(id=prescription.consultation)
+           consultation.resume=resume
+           consultation.archived=True
+           consultation.save()
+           JsonResponse({'message': 'Consultation archived successfully', 'prescription_id': prescription.id}, status=201)
+        except:
+          return Response("archiving failed")     
+class GetPrescriptionView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        prescription_id = request.data.get('prescription_id')
+        if not prescription_id :
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        prescription = Prescription.objects.get(id=prescription_id)
+        consultation = Consultation.objects.get(id=prescription.consultation)
+        patient = Patient.objects.get(id=consultation.patient)
+        doctor = Worker.objects.get(id=consultation.doctor)
+        
+        today = date.today()
+        age = today.year - patient.user.date_of_birth.year
+        prescription_details = PrescriptionDetail.objects.filter(prescription=prescription)
+        details_string = "\n".join(
+            f"- {detail.medicine.name} {detail.dosage} {detail.frequency} for {detail.duration} {detail.instructions}"
+            for detail in prescription_details
+        )
+        
+        data={
+            "hospital_name":patient.user.hospital,
+            "doctor_name":f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
+            "speciality":doctor.speciality,
+            "patient_name":f"{patient.user.user.first_name} {patient.user.user.last_name}",
+            "age":age,
+            "gender":patient.user.gender,
+            "date":prescription.created_at,
+            "medications":details_string,
+            "notes":prescription.notes
+        }
+       
+        
+        JsonResponse(data, status=200)
+          
 class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
