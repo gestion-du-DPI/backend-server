@@ -2,7 +2,7 @@ from django.db import models
 from users.models import Patient,Worker,Hospital
 from cloudinary.models import CloudinaryField
 from django.core.exceptions import ValidationError
-
+from django.utils.timezone import now
 # Create your models here.
 # Consultation Model
 class Consultation(models.Model):
@@ -17,12 +17,15 @@ class Consultation(models.Model):
     reason = models.CharField(max_length=80)
     archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    archived_at = models.DateTimeField(blank=True, null=True)
     resume = models.TextField(blank=True, null=True)
     def clean(self):
         if self.priority not in dict(self.PRIORITY_CHOICES):
             raise ValidationError({'priority': f"{self.priority} is not a valid choice."})
 
     def save(self, *args, **kwargs):
+        if self.archived and not self.archived_at:
+            self.archived_at = now()
         self.full_clean() 
         super().save(*args, **kwargs)
        
@@ -98,7 +101,7 @@ class Ticket(models.Model):
 class LabResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
     labtechnician = models.ForeignKey(Worker, on_delete=models.CASCADE)
-  
+    created_at = models.DateTimeField(auto_now_add=True)
 class LabImage(models.Model):
     labresult = models.ForeignKey(LabResult, on_delete=models.CASCADE)
     image = CloudinaryField('image')  
@@ -111,6 +114,7 @@ class LabObservation(models.Model):
 class RadioResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
     radiologist = models.ForeignKey(Worker, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
   
 class RadioImage(models.Model):
     radioresult = models.ForeignKey(RadioResult, on_delete=models.CASCADE)
@@ -124,7 +128,7 @@ class RadioObservation(models.Model):
 class NursingResult(models.Model):
     ticket = models.OneToOneField(Ticket,on_delete=models.CASCADE)
     nurse = models.ForeignKey(Worker, on_delete=models.CASCADE)
-  
+    created_at = models.DateTimeField(auto_now_add=True)
 class NursingObservation(models.Model):
     nursingresult = models.ForeignKey(NursingResult, on_delete=models.CASCADE)
     title = models.CharField(max_length=80)  

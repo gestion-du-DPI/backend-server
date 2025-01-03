@@ -81,7 +81,7 @@ class DoctorOnlyView(APIView):
         stats_list =[]
         for i in range(6):
           stats_list.append({
-            month_name[(six_months_ago + timedelta(days=30 * i)).month]: {
+            month_name[(six_months_ago + timedelta(days=31 * i)).month]: {
                 'patients': next(
                     (entry['count'] for entry in patient_stats if entry['month'].month == (six_months_ago + timedelta(days=31 * i)).month),
                     0
@@ -156,6 +156,7 @@ class GetPatientView(APIView):
 
     def get(self, request):
         nss = request.data.get('nss')
+        if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
         patient =AppUser.objects.get(nss=nss).appuser
        
         consultation_count = patient.patient.consultation_set.count()
@@ -176,6 +177,56 @@ class GetPatientView(APIView):
           
         
         return JsonResponse(data)
+class GetDPIView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        nss = request.data.get('nss')
+        if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
+        patient =AppUser.objects.get(nss=nss).appuser
+        consultations = Consultation.objects.filter(patient=patient.patient)
+        consultations_list = []
+        for consultation in consultations:
+            doctor= Worker.objects.get(id=consultation.doctor)
+            
+            last_prescription = Prescription.objects.filter(consultation=consultation).order_by('-id').first()
+            if not last_prescription: sgph="-----"
+            else : sgph = last_prescription.status
+            
+            if(consultation.archived):
+                lasted_for=(consultation.archived_at-consultation.created_at).days
+            else : lasted_for="-----"
+            
+            consultations_list.append({
+                "consultation_id":consultation.id,
+                "archived":consultation.archived,
+                "date":consultation.created_at,
+                "doctor_name":doctor.name,
+                "lasted_for":lasted_for,
+                "sgph":sgph,
+                "reason":consultation.reason,
+                "priority":consultation.priority
+                
+                
+            })
+        data ={
+              'user_id':patient.id,
+              'profile_image':patient.image.url,
+              'name': f"{patient.user.first_name} {patient.user.last_name}",
+              'date_of_birth': patient.date_of_birth,
+              'nss':patient.nss,
+              'email': patient.user.email,
+              'phone_number': patient.phone_number,
+              'emergency_contact_name':patient.patient.emergency_contact_name,
+              'emergency_contact_phone':patient.patient.emergency_contact_phone,
+              'medical_condition':patient.patient.resume,
+              'consultations_list':consultations_list
+              
+          }
+      
+          
+        
+        return JsonResponse(data)
 class CreateConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -187,7 +238,7 @@ class CreateConultationView(APIView):
         if not all([ patient_id,priority,reason]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-           consultation =Consultation.objects.create(patient_id=patient_id,docto_id=doctor_id,priority=priority,reason=reason,archived=False,resume="")
+           consultation =Consultation.objects.create(patient_id=patient_id,doctor_id=doctor_id,priority=priority,reason=reason,archived=False,resume="")
            JsonResponse({'message': 'Consutation created successfully', 'consultation_id': consultation.id}, status=201)
         except:
           return Response("creation failed")
@@ -202,6 +253,7 @@ class getConultationView(APIView):
         patient= Patient.objects.get(id=consultation.patient).appuser
         data ={
               'user_id':patient.id,
+              'profile_image':patient.image.url,
               'consultation_id':consultation.id,
               'name': f"{patient.user.first_name} {patient.user.last_name}",
               'date_of_birth': patient.date_of_birth,
@@ -225,58 +277,169 @@ class getAttachmentsView(APIView):
         # Lab Results
         lab_results = LabResult.objects.filter(ticket__consultation=consultation)
         for result in lab_results:
-            for image in result.labimage_set.all():
+             ticket = Ticket.objects.get(pk=result.ticket)
+             for image in result.labimage_set.all():
                 
                 results_serialized.append({
-                    'type': 'Lab',
-                    'lab_technician': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
-                    'image': image.image.url ,
+                    'type': 'Lab_image',
+                    'title':ticket.title,
+                    'made_by':f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'profile_image':result.labtechnician.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id': image.image.url ,
                    
                 })
-            for obs in result.labobservation_set.all():    
+             for obs in result.labobservation_set.all():    
                  results_serialized.append({
-                    'type': 'Lab',
-                    'lab_technician': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
-                    'observation': [
-                        {'title': obs.title, 'notes': obs.notes} 
-                    ],
+                    'type': 'lab_observation',
+                    'title':ticket.title,
+                    'made_by':f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'profile_image':result.labtechnician.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id
+                   
                 })
+
 
         # Radio Results
         radio_results = RadioResult.objects.filter(ticket__consultation=consultation)
         for result in radio_results:
+             ticket = Ticket.objects.get(pk=result.ticket)
              for image in result.radioimage_set.all():
                 
                 results_serialized.append({
-                    'type': 'Radio',
-                    'radiologist': f"{result.labtechnician.user.user.first_name} {result.radiologist.user.user.last_name}",
-                    'image': image.image.url ,
+                    'type': 'Radio_image',
+                    'title':ticket.title,
+                    'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'profile_image':result.radiologist.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id': image.image.url ,
                    
                 })
              for obs in result.radioobservation_set.all():    
                  results_serialized.append({
-                    'type': 'Radio',
-                    'radiologist': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
-                    'observation': [
-                        {'title': obs.title, 'notes': obs.notes} 
-                    ],
+                    'type': 'Radio_observation',
+                    'title':ticket.title,
+                    'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'profile_image':result.radiologist.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id
+                   
                 })
 
 
         # Nursing Results
         nursing_results = NursingResult.objects.filter(ticket__consultation=consultation)
         for result in nursing_results:
+             ticket = Ticket.objects.get(pk=result.ticket)
              for obs in result.nursingobservation_set.all():    
                  results_serialized.append({
-                    'type': 'Nursing',
-                    'nurse': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
-                    'observation': [
-                        {'title': obs.title, 'notes': obs.notes} 
-                    ],
+                    'type': 'Nursing_observation',
+                    'title':ticket.title,
+                    'made_by': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
+                    'profile_image':result.nurse.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id ,
+                })
+        prescriptions = Prescription.objects.filter(consultation=consultation)
+        for prescription in prescriptions:
+                 consultation=Consultation.objects.get(pk=prescription.consultation)
+                 doctor=Worker.objects.get(pk=consultation.doctor)
+                 results_serialized.append({
+                    'type': 'prescription',
+                    'title': f'Doctor Prescription',
+                    'made_by': f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
+                    'profile_image':doctor.user.image.url,
+                    'created_at':prescription.created_at,
+                    'attachment_id':prescription.id,
+                    
                 })
 
         return JsonResponse(results_serialized)
-      
+class GetLabImageView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+    def get(self,id, request):    
+        try:
+          image= LabImage.objects.get(pk=id)
+          result = LabResult.objects.get(pk=image.labresult)
+          ticket = Ticket.objects.get(pk=result.ticket)
+        except:
+          return Response("unavailable data")
+
+        return JsonResponse(
+            {'title':ticket.title,
+             'created_at':result.created_at,
+             'made_by': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",'image':image.url}
+            )
+
+class GetRadioImageView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+    def get(self,id, request):    
+        try:
+          image= RadioImage.objects.get(pk=id)
+          result = RadioResult.objects.get(pk=image.radioresult)
+          ticket = Ticket.objects.get(pk=result.ticket)
+        except:
+          return Response("unavailable data")
+
+        return JsonResponse(
+            {'title':ticket.title,
+             'created_at':result.created_at,
+             'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+             'image':image.url}
+            )
+
+class GetRadioObservationView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+    def get(self,id, request):    
+        try:
+          obs= RadioObservation.objects.get(pk=id)
+          result = RadioResult.objects.get(pk=obs.radioresult)
+          ticket = Ticket.objects.get(pk=result.ticket)
+        except:
+          return Response("unavailable data")
+
+        return JsonResponse(
+            {
+             'created_at':result.created_at,
+             'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+             'title':obs.title,
+             'notes':obs.notes
+            })
+class GetLabObservationView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+    def get(self,id, request):    
+        try:
+          obs= LabObservation.objects.get(pk=id)
+          result = LabResult.objects.get(pk=obs.labresult)
+          ticket = Ticket.objects.get(pk=result.ticket)
+        except:
+          return Response("unavailable data")
+
+        return JsonResponse(
+            {
+             'created_at':result.created_at,
+             'made_by': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+             'title':obs.title,
+             'notes':obs.notes
+            })
+class GetNurseObservationView(APIView):
+    permission_classes = [IsAuthenticated, IsDoctor]
+    def get(self,id, request):    
+        try:
+          obs= NursingObservation.objects.get(pk=id)
+          result = NursingResult.objects.get(pk=obs.nursingresult)
+          ticket = Ticket.objects.get(pk=result.ticket)
+        except:
+          return Response("unavailable data")
+
+        return JsonResponse(
+            {
+             'created_at':result.created_at,
+             'made_by': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
+             'title':obs.title,
+             'notes':obs.notes
+            })             
 class CreateTicketView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -325,7 +488,7 @@ class ArchiveConsultationView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
        
         try:
-           consultation = Consultation.objects.get(id=prescription.consultation)
+           consultation = Consultation.objects.get(id=consultation_id)
            consultation.resume=resume
            consultation.archived=True
            consultation.save()
@@ -354,7 +517,7 @@ class GetPrescriptionView(APIView):
         )
         
         data={
-            "hospital_name":patient.user.hospital,
+            "hospital_name":patient.user.hospital.name,
             "doctor_name":f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
             "speciality":doctor.speciality,
             "patient_name":f"{patient.user.user.first_name} {patient.user.user.last_name}",
@@ -389,8 +552,6 @@ class ModifyMyUser(APIView):
             app_user.image = file  
         if first_name:
             app_user.user.first_name = first_name
-        if hospital_name:
-            app_user.hospital.name = hospital_name
         if last_name:
             app_user.user.last_name = last_name
         if gender:
