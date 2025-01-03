@@ -492,7 +492,7 @@ class ArchiveConsultationView(APIView):
            consultation.resume=resume
            consultation.archived=True
            consultation.save()
-           JsonResponse({'message': 'Consultation archived successfully', 'prescription_id': prescription.id}, status=201)
+           JsonResponse({'message': 'Consultation archived successfully', 'consultation_id': consultation_id}, status=201)
         except:
           return Response("archiving failed")     
 class GetPrescriptionView(APIView):

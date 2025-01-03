@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'nurse',
     'radiologist',
     'labtechnician',
+    'sgph',
     'cloudinary',
     'cloudinary_storage',
     
