@@ -577,7 +577,7 @@ class ModifyMyUser(APIView):
               
 
 class GenerateQRView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsDoctor]
 
     def get(self, request):
       nss = request.data.get('nss')
