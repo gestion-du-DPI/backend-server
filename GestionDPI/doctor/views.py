@@ -157,8 +157,8 @@ class GetPatientsList(APIView):
 class GetPatientView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self, request):
-        id = request.data.get('user_id')
+    def get(self,id, request):
+     
         patient =AppUser.objects.get(id=id)
        
         consultation_count = patient.patient.consultation_set.count()

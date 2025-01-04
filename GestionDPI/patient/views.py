@@ -7,7 +7,7 @@ from rest_framework.exceptions import NotFound
 from django.db import transaction
 from django.http import JsonResponse
 from users.models import Patient
-from doctor.models import Consultation
+from doctor.models import Consultation,Prescription,LabImage,LabObservation,LabResult,RadioResult,RadioImage,RadioObservation,NursingObservation,NursingResult,Ticket
 from GestionDPI.permissions import IsPatient
 from doctor.models import  LabResult, RadioResult, NursingResult
 from django.contrib.auth.password_validation import validate_password
@@ -107,43 +107,89 @@ class ConsultationDetailView(APIView):
             'resume': consultation.resume,
             'archived' : consultation.archived
         }
-
         results_serialized = []
 
         # Lab Results
         lab_results = LabResult.objects.filter(ticket__consultation=consultation)
         for result in lab_results:
-            results_serialized.append({
-                'type': 'Lab',
-                'lab_technician': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
-                'images': [image.image.url for image in result.labimage_set.all()],
-                'observations': [
-                    {'title': obs.title, 'notes': obs.notes} for obs in result.labobservation_set.all()
-                ],
-            })
+             ticket = Ticket.objects.get(pk=result.ticket)
+             for image in result.labimage_set.all():
+                
+                results_serialized.append({
+                    'type': 'Lab_image',
+                    'title':ticket.title,
+                    'made_by':f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'profile_image':result.labtechnician.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id': image.image.url ,
+                   
+                })
+             for obs in result.labobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'lab_observation',
+                    'title':ticket.title,
+                    'made_by':f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
+                    'profile_image':result.labtechnician.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id
+                   
+                })
+
 
         # Radio Results
         radio_results = RadioResult.objects.filter(ticket__consultation=consultation)
         for result in radio_results:
-            results_serialized.append({
-                'type': 'Radio',
-                'radiologist': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
-                'images': [image.image.url for image in result.radioimage_set.all()],
-                'observations': [
-                    {'title': obs.title, 'notes': obs.notes} for obs in result.radioobservation_set.all()
-                ],
-            })
+             ticket = Ticket.objects.get(pk=result.ticket)
+             for image in result.radioimage_set.all():
+                
+                results_serialized.append({
+                    'type': 'Radio_image',
+                    'title':ticket.title,
+                    'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'profile_image':result.radiologist.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id': image.image.url ,
+                   
+                })
+             for obs in result.radioobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'Radio_observation',
+                    'title':ticket.title,
+                    'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
+                    'profile_image':result.radiologist.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id
+                   
+                })
+
 
         # Nursing Results
         nursing_results = NursingResult.objects.filter(ticket__consultation=consultation)
         for result in nursing_results:
-            results_serialized.append({
-                'type': 'Nursing',
-                'nurse': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
-                'observations': [
-                    {'title': obs.title, 'notes': obs.notes} for obs in result.nursingobservation_set.all()
-                ],
-            })
+             ticket = Ticket.objects.get(pk=result.ticket)
+             for obs in result.nursingobservation_set.all():    
+                 results_serialized.append({
+                    'type': 'Nursing_observation',
+                    'title':ticket.title,
+                    'made_by': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
+                    'profile_image':result.nurse.user.image.url,
+                    'created_at':result.created_at,
+                    'attachment_id':obs.id ,
+                })
+        prescriptions = Prescription.objects.filter(consultation=consultation)
+        for prescription in prescriptions:
+                 consultation=Consultation.objects.get(pk=prescription.consultation)
+                 doctor=Worker.objects.get(pk=consultation.doctor)
+                 results_serialized.append({
+                    'type': 'prescription',
+                    'title': f'Doctor Prescription',
+                    'made_by': f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
+                    'profile_image':doctor.user.image.url,
+                    'created_at':prescription.created_at,
+                    'attachment_id':prescription.id,
+                    
+                })
+
 
         return JsonResponse({'patient':patient_info,'consultation': consultation_details, 'results': results_serialized}, status=200)
 
