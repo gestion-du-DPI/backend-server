@@ -159,8 +159,7 @@ class GetPatientView(APIView):
 
     def get(self, request):
         id = request.data.get('user_id')
-        if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
-        patient =AppUser.objects.get(id=id).appuser
+        patient =AppUser.objects.get(id=id)
        
         consultation_count = patient.patient.consultation_set.count()
         data={
@@ -456,7 +455,7 @@ class CreateTicketView(APIView):
         if not all([ consultation_id,priority,type,title,description]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-           ticket =Ticket.objects.create(consultation=consultation_id,priority=priority,status=status,type=type,title=title,description=description,hospital=AppUser.hospital)
+           ticket =Ticket.objects.create(consultation=consultation_id,priority=priority,status='Open',type=type,title=title,description=description,hospital=AppUser.hospital)
            JsonResponse({'message': 'Ticket created successfully', 'ticket_id': ticket.id}, status=201)
         except:
           return Response("creation failed")

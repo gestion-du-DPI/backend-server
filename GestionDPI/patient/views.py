@@ -29,6 +29,7 @@ class PatientDashboardView(APIView):
         #patient info
         patient_info = {
             'name': f"{user.first_name} {user.last_name}",
+            'hospital':patient.user.hospital.name,
             'gender': patient.user.gender,
             'nss': patient.user.nss,
             'date_of_birth': patient.user.date_of_birth,
@@ -43,20 +44,32 @@ class PatientDashboardView(APIView):
         #consultations related to the patient
         consultations = Consultation.objects.filter(patient=patient)
         print(consultations)
-        consultations_serialized = [
-            {
-                'id': consultation.id,
-                'created_at': consultation.created_at,
-                'doctor': f"{consultation.doctor.user.user.first_name} {consultation.doctor.user.user.last_name}",
-                'priority': consultation.priority,
-                'reason': consultation.reason,
-                'resume': consultation.resume,
-                'archived': consultation.archived
-            }
-            for consultation in consultations
-        ]
-        print(consultations_serialized)
-        return JsonResponse({'patient_info': patient_info, 'consultations': consultations_serialized}, status=200)
+        consultations_list = []
+        for consultation in consultations:
+            doctor= Worker.objects.get(id=consultation.doctor)
+            
+            last_prescription = Prescription.objects.filter(consultation=consultation).order_by('-id').first()
+            if not last_prescription: sgph="-----"
+            else : sgph = last_prescription.status
+            
+            if(consultation.archived):
+                lasted_for=(consultation.archived_at-consultation.created_at).days
+            else : lasted_for="-----"
+            
+            consultations_list.append({
+                "consultation_id":consultation.id,
+                "archived":consultation.archived,
+                "date":consultation.created_at,
+                "doctor_name":doctor.name,
+                "lasted_for":lasted_for,
+                "sgph":sgph,
+                "reason":consultation.reason,
+                "priority":consultation.priority
+                
+                
+            })
+        print(consultations_list)
+        return JsonResponse({'patient_info': patient_info, 'consultations': consultations_list}, status=200)
 
 
 class ConsultationDetailView(APIView):
@@ -82,6 +95,7 @@ class ConsultationDetailView(APIView):
             'phone_number': patient.user.phone_number,
             'emergency_contact_name': patient.emergency_contact_name,
             'emergency_contact_phone': patient.emergency_contact_phone,
+            
         }
         # Prepare consultation details
         consultation_details = {
@@ -137,57 +151,45 @@ class ConsultationDetailView(APIView):
 
 
 
-class EditPatientProfileView(APIView):
-    """
-    View to edit the profile information of a patient.
-    """
+class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsPatient]
-    parser_classes = [JSONParser]  # Ensures JSON input
 
-    def patch(self, request):
-        user = request.user
-
-        # Fetch the patient object
-        try:
-            patient = Patient.objects.get(user=user.appuser)
-        except Patient.DoesNotExist:
-            raise NotFound(detail="Patient not found.")
-
-        # Allowed fields for editing (grouped by model)
-        editable_fields = {
-            'user': ['first_name', 'last_name', 'email', 'password'],
-            'appuser': ['gender', 'date_of_birth', 'place_of_birth', 'address', 'phone_number'],
-            'patient': ['emergency_contact_name', 'emergency_contact_phone']
-        }
-
-        errors = {}
-        # Update fields
-        with transaction.atomic():
-            for model_name, fields in editable_fields.items():
-                model_instance = user if model_name == 'user' else patient.user if model_name == 'appuser' else patient
-                for field in fields:
-                    if field in request.data:
-                        value = request.data[field]
-                        try:
-                            # Specific validation for certain fields
-                            if field == 'date_of_birth':
-                                value = serializers.DateField().to_internal_value(value)
-                            if field == 'password':
-                                validate_password(value)  # Validate password strength
-                                model_instance.set_password(value)  # Hash and set the password
-                            elif field == 'email':
-                                if user.__class__.objects.filter(email=value).exclude(id=user.id).exists():
-                                    raise ValidationError("Email address is already in use.")
-                                setattr(model_instance, field, value)
-                            else:
-                                setattr(model_instance, field, value)
-                        except Exception as e:
-                            errors[field] = str(e)
-                
-                # Save the instance
-                model_instance.save()
-
-        if errors:
-            return JsonResponse({'message': 'Some fields could not be updated.', 'errors': errors}, status=400)
-
-        return JsonResponse({"message": "Profile updated successfully."}, status=200)
+   
+    def patch(self, request, format=None):
+       
+        app_user = AppUser.objects.get(pk=request.user.appuser.id)  
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        gender = request.data.get('gender')
+        nss =request.data.get('nss')
+        address = request.data.get('address')
+        phone_number = request.data.get('phone_number')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        file = request.FILES.get('image')  
+        
+        if file:
+            app_user.image = file  
+        if first_name:
+            app_user.user.first_name = first_name
+        if last_name:
+            app_user.user.last_name = last_name
+        if gender:
+            app_user.gender = gender
+        if nss:
+            app_user.nss = nss
+        if address:
+            app_user.address = address
+        if phone_number:
+            app_user.phone_number = phone_number
+        if password:
+            app_user.user.set_password(password) 
+        if email:
+            app_user.user.email = email
+    
+        
+        app_user.user.save()
+        app_user.save()
+        print(app_user.image.url)
+        return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
+              
