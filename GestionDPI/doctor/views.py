@@ -29,6 +29,7 @@ class DoctorOnlyView(APIView):
           'name': f"{user.first_name} {user.last_name}",
           'hospital': user.appuser.hospital.name,
           'address': user.appuser.address,
+          'nss':user.appuser.nss,
           'phone_number':user.appuser.phone_number,
           'email':user.email,
           'profile_image':user.appuser.image.url
@@ -157,9 +158,9 @@ class GetPatientView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
     def get(self, request):
-        nss = request.data.get('nss')
+        id = request.data.get('user_id')
         if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
-        patient =AppUser.objects.get(nss=nss).appuser
+        patient =AppUser.objects.get(id=id).appuser
        
         consultation_count = patient.patient.consultation_set.count()
         data={
