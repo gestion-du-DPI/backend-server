@@ -182,8 +182,8 @@ class GetPatientView(APIView):
 class GetDPIView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self, request):
-        nss = request.data.get('nss')
+    def get(self, request,nss):
+       
         if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
         patient =AppUser.objects.get(nss=nss).appuser
         consultations = Consultation.objects.filter(patient=patient.patient)
