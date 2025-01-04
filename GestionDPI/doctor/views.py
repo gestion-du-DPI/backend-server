@@ -207,7 +207,8 @@ class GetDPIView(APIView):
                 "lasted_for":lasted_for,
                 "sgph":sgph,
                 "reason":consultation.reason,
-                "priority":consultation.priority
+                "priority":consultation.priority,
+                "resume":consultation.resume
                 
                 
             })
