@@ -140,6 +140,7 @@ class GetPatientsList(APIView):
               'nss':patient.nss,
               'email': patient.user.email,
               'address': patient.address,
+              'date_of_birth': patient.date_of_birth,
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
               'emergency_contact_phone':patient.patient.emergency_contact_phone,
