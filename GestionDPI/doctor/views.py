@@ -157,9 +157,9 @@ class GetPatientsList(APIView):
 class GetPatientView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self,id, request):
+    def get(self, request,user_id):
      
-        patient =AppUser.objects.get(id=id)
+        patient =AppUser.objects.get(id=user_id)
        
         consultation_count = patient.patient.consultation_set.count()
         data={
@@ -360,7 +360,7 @@ class getAttachmentsView(APIView):
         return JsonResponse(results_serialized)
 class GetLabImageView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
-    def get(self,id, request):    
+    def get(self, request,id):    
         try:
           image= LabImage.objects.get(pk=id)
           result = LabResult.objects.get(pk=image.labresult)
@@ -393,7 +393,7 @@ class GetRadioImageView(APIView):
 
 class GetRadioObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
-    def get(self,id, request):    
+    def get(self,request,id):    
         try:
           obs= RadioObservation.objects.get(pk=id)
           result = RadioResult.objects.get(pk=obs.radioresult)
@@ -410,7 +410,7 @@ class GetRadioObservationView(APIView):
             })
 class GetLabObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
-    def get(self,id, request):    
+    def get(self, request,id):    
         try:
           obs= LabObservation.objects.get(pk=id)
           result = LabResult.objects.get(pk=obs.labresult)
@@ -427,7 +427,7 @@ class GetLabObservationView(APIView):
             })
 class GetNurseObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
-    def get(self,id, request):    
+    def get(self, request,id):    
         try:
           obs= NursingObservation.objects.get(pk=id)
           result = NursingResult.objects.get(pk=obs.nursingresult)

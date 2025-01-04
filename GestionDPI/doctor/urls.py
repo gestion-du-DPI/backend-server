@@ -24,7 +24,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('home', DoctorOnlyView.as_view(), name='doctor_home'),
-    path('getpatient/<int:id>', GetPatientView.as_view(), name='get_patient'),
+    path('getpatient/<int:user_id>', GetPatientView.as_view(), name='get_patient'),
     path('modifymyuser', ModifyMyUser.as_view(), name='myuser_modify'),
     path('patients', GetPatientsList.as_view(), name='patients_list'),
     path('consultation/create', CreateConultationView.as_view(), name='create_consultation'),
