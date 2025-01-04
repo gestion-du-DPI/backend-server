@@ -233,16 +233,17 @@ class CreateConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
     def post(self, request):
-        doctor_id = request.user.appuser.id
-        patient_id = request.data.get('patient_id')
+        doctor = AppUser.objects.get(id= request.user.appuser.id).worker
+        patient = AppUser.objects.get(id= request.data.get('patient_id')).patient
         priority = request.data.get('priority')
         reason=request.data.get('reason')
-        if not all([ patient_id,priority,reason]):
+        if not all([ patient,priority,reason]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
-           consultation =Consultation.objects.create(patient_id=patient_id,doctor_id=doctor_id,priority=priority,reason=reason,archived=False,resume="")
-           JsonResponse({'message': 'Consutation created successfully', 'consultation_id': consultation.id}, status=201)
-        except:
+           consultation =Consultation.objects.create(patient=patient,doctor=doctor,priority=priority,reason=reason,archived=False,resume="")
+           return JsonResponse({'message': 'Consutation created successfully', 'consultation_id': consultation.id}, status=201)
+        except Exception as e:
+          print(e)
           return Response("creation failed")
         
       
