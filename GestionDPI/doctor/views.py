@@ -185,12 +185,11 @@ class GetDPIView(APIView):
 
     def get(self, request,id):
        
-        if not nss :  return JsonResponse({'error': 'Missing required fields'}, status=400)
         patient =AppUser.objects.get(id=id)
         consultations = Consultation.objects.filter(patient=patient.patient)
         consultations_list = []
         for consultation in consultations:
-            doctor= Worker.objects.get(id=consultation.doctor)
+            doctor= Worker.objects.get(id=consultation.doctor.id)
             
             last_prescription = Prescription.objects.filter(consultation=consultation).order_by('-id').first()
             if not last_prescription: sgph="-----"
@@ -204,7 +203,7 @@ class GetDPIView(APIView):
                 "consultation_id":consultation.id,
                 "archived":consultation.archived,
                 "date":consultation.created_at,
-                "doctor_name":doctor.name,
+                "doctor_name":f"{doctor.user.user.first_name} {doctor.user.user.last_name}",
                 "lasted_for":lasted_for,
                 "sgph":sgph,
                 "reason":consultation.reason,
@@ -222,7 +221,7 @@ class GetDPIView(APIView):
               'phone_number': patient.phone_number,
               'emergency_contact_name':patient.patient.emergency_contact_name,
               'emergency_contact_phone':patient.patient.emergency_contact_phone,
-              'medical_condition':patient.patient.resume,
+              'medical_condition':patient.patient.medical_condition,
               'consultations_list':consultations_list
               
           }
