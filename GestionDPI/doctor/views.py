@@ -249,9 +249,9 @@ class CreateConultationView(APIView):
 class getConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self, request):
+    def get(self, request,consultation_id):
         doctor_id = request.user.appuser.id
-        consultation = Consultation.objects.get(id=request.data.get('consultation_id'))
+        consultation = Consultation.objects.get(id=consultation_id)
         patient= Patient.objects.get(id=consultation.patient).appuser
         data ={
               'user_id':patient.id,
@@ -271,9 +271,9 @@ class getConultationView(APIView):
 class getAttachmentsView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self, request):
+    def get(self, request,consultation_id):
         doctor_id = request.user.appuser.id
-        consultation = Consultation.objects.get(id=request.data.get('consultation_id'))
+        consultation = Consultation.objects.get(id=consultation_id)
         results_serialized = []
 
         # Lab Results
@@ -500,8 +500,8 @@ class ArchiveConsultationView(APIView):
 class GetPrescriptionView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
-    def get(self, request):
-        prescription_id = request.data.get('prescription_id')
+    def get(self, request,prescription_id):
+     
         if not prescription_id :
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         
