@@ -281,7 +281,7 @@ class getAttachmentsView(APIView):
         # Lab Results
         lab_results = LabResult.objects.filter(ticket__consultation=consultation)
         for result in lab_results:
-             ticket = Ticket.objects.get(pk=result.ticket)
+             ticket = Ticket.objects.get(pk=result.ticket.id)
              for image in result.labimage_set.all():
                 
                 results_serialized.append({
@@ -308,7 +308,7 @@ class getAttachmentsView(APIView):
         # Radio Results
         radio_results = RadioResult.objects.filter(ticket__consultation=consultation)
         for result in radio_results:
-             ticket = Ticket.objects.get(pk=result.ticket)
+             ticket = Ticket.objects.get(pk=result.ticket.id)
              for image in result.radioimage_set.all():
                 
                 results_serialized.append({
@@ -335,7 +335,7 @@ class getAttachmentsView(APIView):
         # Nursing Results
         nursing_results = NursingResult.objects.filter(ticket__consultation=consultation)
         for result in nursing_results:
-             ticket = Ticket.objects.get(pk=result.ticket)
+             ticket = Ticket.objects.get(pk=result.ticket.id)
              for obs in result.nursingobservation_set.all():    
                  results_serialized.append({
                     'type': 'Nursing_observation',
@@ -347,8 +347,8 @@ class getAttachmentsView(APIView):
                 })
         prescriptions = Prescription.objects.filter(consultation=consultation)
         for prescription in prescriptions:
-                 consultation=Consultation.objects.get(pk=prescription.consultation)
-                 doctor=Worker.objects.get(pk=consultation.doctor)
+                 consultation=Consultation.objects.get(pk=prescription.consultation.id)
+                 doctor=Worker.objects.get(pk=consultation.doctor.id)
                  results_serialized.append({
                     'type': 'prescription',
                     'title': f'Doctor Prescription',
@@ -365,8 +365,8 @@ class GetLabImageView(APIView):
     def get(self, request,id):    
         try:
           image= LabImage.objects.get(pk=id)
-          result = LabResult.objects.get(pk=image.labresult)
-          ticket = Ticket.objects.get(pk=result.ticket)
+          result = LabResult.objects.get(pk=image.labresult.id)
+          ticket = Ticket.objects.get(pk=result.ticket.id)
         except:
           return Response("unavailable data")
 
@@ -381,8 +381,8 @@ class GetRadioImageView(APIView):
     def get(self,id, request):    
         try:
           image= RadioImage.objects.get(pk=id)
-          result = RadioResult.objects.get(pk=image.radioresult)
-          ticket = Ticket.objects.get(pk=result.ticket)
+          result = RadioResult.objects.get(pk=image.radioresult.id)
+          ticket = Ticket.objects.get(pk=result.ticket.id)
         except:
           return Response("unavailable data")
 
@@ -398,8 +398,8 @@ class GetRadioObservationView(APIView):
     def get(self,request,id):    
         try:
           obs= RadioObservation.objects.get(pk=id)
-          result = RadioResult.objects.get(pk=obs.radioresult)
-          ticket = Ticket.objects.get(pk=result.ticket)
+          result = RadioResult.objects.get(pk=obs.radioresult.id)
+          ticket = Ticket.objects.get(pk=result.ticket.id)
         except:
           return Response("unavailable data")
 
@@ -415,8 +415,8 @@ class GetLabObservationView(APIView):
     def get(self, request,id):    
         try:
           obs= LabObservation.objects.get(pk=id)
-          result = LabResult.objects.get(pk=obs.labresult)
-          ticket = Ticket.objects.get(pk=result.ticket)
+          result = LabResult.objects.get(pk=obs.labresult.id)
+          ticket = Ticket.objects.get(pk=result.ticket.id)
         except:
           return Response("unavailable data")
 
@@ -432,8 +432,8 @@ class GetNurseObservationView(APIView):
     def get(self, request,id):    
         try:
           obs= NursingObservation.objects.get(pk=id)
-          result = NursingResult.objects.get(pk=obs.nursingresult)
-          ticket = Ticket.objects.get(pk=result.ticket)
+          result = NursingResult.objects.get(pk=obs.nursingresult.id)
+          ticket = Ticket.objects.get(pk=result.ticket.id)
         except:
           return Response("unavailable data")
 
@@ -508,7 +508,7 @@ class GetPrescriptionView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         
         prescription = Prescription.objects.get(id=prescription_id)
-        consultation = Consultation.objects.get(id=prescription.consultation)
+        consultation = Consultation.objects.get(id=prescription.consultation.id)
         patient = Patient.objects.get(id=consultation.patient)
         doctor = Worker.objects.get(id=consultation.doctor)
         
