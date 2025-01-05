@@ -359,7 +359,7 @@ class getAttachmentsView(APIView):
                     
                 })
 
-        return JsonResponse(results_serialized)
+        return JsonResponse({"results":results_serialized})
 class GetLabImageView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self, request,id):    
