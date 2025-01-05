@@ -338,7 +338,7 @@ class getAttachmentsView(APIView):
              ticket = Ticket.objects.get(pk=result.ticket.id)
              for obs in result.nursingobservation_set.all():    
                  results_serialized.append({
-                    'type': 'Nursing_observation',
+                    'type': 'nursing_observation',
                     'title':ticket.title,
                     'made_by': f"{result.nurse.user.user.first_name} {result.nurse.user.user.last_name}",
                     'profile_image':result.nurse.user.image.url,
