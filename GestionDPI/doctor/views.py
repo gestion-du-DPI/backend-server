@@ -290,7 +290,7 @@ class getAttachmentsView(APIView):
                     'made_by':f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",
                     'profile_image':result.labtechnician.user.image.url,
                     'created_at':result.created_at,
-                    'attachment_id': image.image.url ,
+                    'attachment_id': image.id,
                    
                 })
              for obs in result.labobservation_set.all():    
@@ -317,7 +317,7 @@ class getAttachmentsView(APIView):
                     'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
                     'profile_image':result.radiologist.user.image.url,
                     'created_at':result.created_at,
-                    'attachment_id': image.image.url ,
+                    'attachment_id': image.id ,
                    
                 })
              for obs in result.radioobservation_set.all():    
