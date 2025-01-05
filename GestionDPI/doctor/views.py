@@ -373,12 +373,12 @@ class GetLabImageView(APIView):
         return JsonResponse(
             {'title':ticket.title,
              'created_at':result.created_at,
-             'made_by': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",'image':image.url}
+             'made_by': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",'image':image.image.url}
             )
 
 class GetRadioImageView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
-    def get(self,id, request):    
+    def get(self, request,id):    
         try:
           image= RadioImage.objects.get(pk=id)
           result = RadioResult.objects.get(pk=image.radioresult.id)
@@ -390,7 +390,7 @@ class GetRadioImageView(APIView):
             {'title':ticket.title,
              'created_at':result.created_at,
              'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
-             'image':image.url}
+             'image':image.image.url}
             )
 
 class GetRadioObservationView(APIView):
@@ -458,7 +458,7 @@ class CreateTicketView(APIView):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         try:
            ticket =Ticket.objects.create(consultation=consultation_id,priority=priority,status='Open',type=type,title=title,description=description,hospital=AppUser.hospital)
-           JsonResponse({'message': 'Ticket created successfully', 'ticket_id': ticket.id}, status=201)
+           return JsonResponse({'message': 'Ticket created successfully', 'ticket_id': ticket.id}, status=201)
         except:
           return Response("creation failed")
 
@@ -478,7 +478,7 @@ class CreatePrescriptionView(APIView):
            for medicine_detail in medicines_list:
                medicine = Medicine.objects.create(name=medicine_detail['name'])
                prescription_detail=PrescriptionDetail.objects.create(prescription=prescription,medicine=medicine,dosage=medicine_detail['dosage'],duration=medicine_detail['duration'],instructions=medicine_detail['instructions'],frequency=medicine_detail['frequency'])
-           JsonResponse({'message': 'Prescription created successfully', 'prescription_id': prescription.id}, status=201)
+           return JsonResponse({'message': 'Prescription created successfully', 'prescription_id': prescription.id}, status=201)
         except:
           return Response("creation failed")
 class ArchiveConsultationView(APIView):
@@ -496,7 +496,7 @@ class ArchiveConsultationView(APIView):
            consultation.resume=resume
            consultation.archived=True
            consultation.save()
-           JsonResponse({'message': 'Consultation archived successfully', 'consultation_id': consultation_id}, status=201)
+           return JsonResponse({'message': 'Consultation archived successfully', 'consultation_id': consultation_id}, status=201)
         except:
           return Response("archiving failed")     
 class GetPrescriptionView(APIView):
@@ -504,13 +504,10 @@ class GetPrescriptionView(APIView):
 
     def get(self, request,prescription_id):
      
-        if not prescription_id :
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
-        
         prescription = Prescription.objects.get(id=prescription_id)
         consultation = Consultation.objects.get(id=prescription.consultation.id)
-        patient = Patient.objects.get(id=consultation.patient)
-        doctor = Worker.objects.get(id=consultation.doctor)
+        patient = Patient.objects.get(id=consultation.patient.id)
+        doctor = Worker.objects.get(id=consultation.doctor.id)
         
         today = date.today()
         age = today.year - patient.user.date_of_birth.year
@@ -533,7 +530,7 @@ class GetPrescriptionView(APIView):
         }
        
         
-        JsonResponse(data, status=200)
+        return JsonResponse(data, status=200)
           
 class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
