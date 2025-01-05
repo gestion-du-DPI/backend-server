@@ -254,7 +254,7 @@ class getConultationView(APIView):
     def get(self, request,consultation_id):
         doctor_id = request.user.appuser.id
         consultation = Consultation.objects.get(id=consultation_id)
-        patient= Patient.objects.get(id=consultation.patient).appuser
+        patient= Patient.objects.get(id=consultation.patient.id).user
         data ={
               'user_id':patient.id,
               'profile_image':patient.image.url,
