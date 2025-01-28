@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'sgph',
     'cloudinary',
     'cloudinary_storage',
+    'django_extensions',
     
 ]
 
