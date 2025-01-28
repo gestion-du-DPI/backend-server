@@ -1,6 +1,19 @@
 from django.shortcuts import render
-
-# Create your views here.
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse,OpenApiTypes
+@extend_schema(
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "prescription_id": {"type": "integer"},
+                "status": {"type": "string"},
+            },
+            "required": ["prescription_id", "status"],
+        }
+    },
+    responses={201: {"type": "string", "example": "Prescription status modified successfully"}},
+    description="Modify the status of a prescription",
+)
 class SetPrescriptionView(APIView):
     permission_classes = []
 
@@ -19,6 +32,28 @@ class SetPrescriptionView(APIView):
         except:
           return Response("modyfing state failed")     
 
+@extend_schema(
+    responses={
+        200: {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "hospital_name": {"type": "string"},
+                    "doctor_name": {"type": "string"},
+                    "speciality": {"type": "string"},
+                    "patient_name": {"type": "string"},
+                    "age": {"type": "integer"},
+                    "gender": {"type": "string"},
+                    "date": {"type": "string", "format": "date"},
+                    "medications": {"type": "string"},
+                    "notes": {"type": "string"},
+                },
+            },
+        }
+    },
+    description="Retrieve a list of prescriptions with detailed information",
+)
 class GetPrescriptionsView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 

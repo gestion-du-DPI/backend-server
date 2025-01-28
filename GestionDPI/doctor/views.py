@@ -16,8 +16,46 @@ from rest_framework import status
 import qrcode
 from django.http import HttpResponse
 import io
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
-
+@extend_schema(
+    tags=['Doctor Dashboard'],
+    summary="Get doctor's dashboard information",
+    description="""
+    Retrieves comprehensive dashboard information for the authenticated doctor including:
+    - Personal information
+    - Recent consultations
+    - Patient statistics
+    - Recent tickets
+    - Six-month analytics
+    """,
+    responses={
+        200: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+        403: OpenApiTypes.OBJECT
+    },
+    examples=[
+        OpenApiExample(
+            'Success Response',
+            value={
+                'doctor_info': {
+                    'id': 1,
+                    'name': 'John Doe',
+                    'hospital': 'Central Hospital',
+                    'address': '123 Main St',
+                    'nss': '12345',
+                    'phone_number': '+1234567890',
+                    'email': 'john@example.com',
+                    'profile_image': 'url/to/image'
+                },
+                'stats': [{'January': {'patients': 10, 'consultations': 25}}],
+                'recent_patients': [],
+                'requested_tests': []
+            }
+        )
+    ]
+)
 class DoctorOnlyView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -124,6 +162,34 @@ class DoctorOnlyView(APIView):
         }
        
         return JsonResponse(data)
+    
+@extend_schema(
+    tags=['Patients'],
+    summary="Get list of all patients",
+    description="Returns a list of all patients in the doctor's hospital with their basic information",
+    responses={
+        200: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+        403: OpenApiTypes.OBJECT
+    },
+    examples=[
+        OpenApiExample(
+            'Success Response',
+            value={
+                'patients': [{
+                    'user_id': 1,
+                    'name': 'John Doe',
+                    'created_at': '2024-01-28T12:00:00Z',
+                    'nss': '12345',
+                    'email': 'patient@example.com',
+                    'date_of_birth': '1990-01-01',
+                    'consultation_count': 5,
+                    'profile_image': 'url/to/image'
+                }]
+            }
+        )
+    ]
+)
 class GetPatientsList(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -155,6 +221,18 @@ class GetPatientsList(APIView):
         return JsonResponse({"patients":patients_serialized}, status=200)
       
   
+@extend_schema(
+    tags=['Patients'],
+    summary="Get specific patient details",
+    description="Retrieve detailed information about a specific patient",
+    parameters=[
+        OpenApiParameter(name='user_id', type=int, location=OpenApiParameter.PATH, description='Patient ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)
 class GetPatientView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -180,6 +258,19 @@ class GetPatientView(APIView):
           
         
         return JsonResponse(data)
+    
+@extend_schema(
+    tags=['Patient Records'],
+    summary="Get patient's DPI (Digital Patient Information)",
+    description="Retrieves comprehensive patient information including consultation history",
+    parameters=[
+        OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Patient ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)
 class GetDPIView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -230,6 +321,28 @@ class GetDPIView(APIView):
           
         
         return JsonResponse(data)
+    
+    
+@extend_schema(
+    tags=['Consultations'],
+    summary="Create new consultation",
+    description="Creates a new consultation for a patient",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'patient_id': {'type': 'integer'},
+                'priority': {'type': 'string', 'enum': ['Low', 'Medium', 'Critical']},
+                'reason': {'type': 'string'}
+            },
+            'required': ['patient_id', 'priority', 'reason']
+        }
+    },
+    responses={
+        201: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class CreateConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -247,7 +360,18 @@ class CreateConultationView(APIView):
           print(e)
           return Response("creation failed")
         
-      
+@extend_schema(
+    tags=['Consultations'],
+    summary="Get consultation details",
+    description="Retrieve detailed information about a specific consultation",
+    parameters=[
+        OpenApiParameter(name='consultation_id', type=int, location=OpenApiParameter.PATH, description='Consultation ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)    
 class getConultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -270,6 +394,19 @@ class getConultationView(APIView):
               'archived':consultation.archived
           }
         return JsonResponse(data)
+    
+@extend_schema(
+    tags=['Attachments'],
+    summary="Get consultation attachments",
+    description="Retrieve all attachments (lab results, radio images, observations) related to a consultation",
+    parameters=[
+        OpenApiParameter(name='consultation_id', type=int, location=OpenApiParameter.PATH, description='Consultation ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)
 class getAttachmentsView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -360,6 +497,19 @@ class getAttachmentsView(APIView):
                 })
 
         return JsonResponse({"results":results_serialized})
+    
+@extend_schema(
+    tags=['Attachments'],
+    summary="Get lab image",
+    description="Retrieve a specific lab image",
+    parameters=[
+        OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Lab Image ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)
 class GetLabImageView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self, request,id):    
@@ -376,6 +526,18 @@ class GetLabImageView(APIView):
              'made_by': f"{result.labtechnician.user.user.first_name} {result.labtechnician.user.user.last_name}",'image':image.image.url}
             )
 
+@extend_schema(
+    tags=['Attachments'],
+    summary="Get radio image",
+    description="Retrieve a specific radio image",
+    parameters=[
+        OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Radio Image ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)
 class GetRadioImageView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self, request,id):    
@@ -392,7 +554,22 @@ class GetRadioImageView(APIView):
              'made_by': f"{result.radiologist.user.user.first_name} {result.radiologist.user.user.last_name}",
              'image':image.image.url}
             )
-
+@extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description='Radio observation details',
+                examples=[
+                    {
+                        'created_at': '2025-01-01T10:00:00Z',
+                        'made_by': 'Dr. John Doe',
+                        'title': 'Radio Test Result',
+                        'notes': 'Notes for the radio observation'
+                    }
+                ]
+            ),
+            404: OpenApiResponse(description='Data unavailable')
+        }
+    )
 class GetRadioObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self,request,id):    
@@ -410,6 +587,22 @@ class GetRadioObservationView(APIView):
              'title':obs.title,
              'notes':obs.notes
             })
+@extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description='Lab observation details',
+                examples=[
+                    {
+                        'created_at': '2025-01-01T10:00:00Z',
+                        'made_by': 'Dr. Jane Doe',
+                        'title': 'Lab Test Result',
+                        'notes': 'Notes for the lab observation'
+                    }
+                ]
+            ),
+            404: OpenApiResponse(description='Data unavailable')
+        }
+    )
 class GetLabObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self, request,id):    
@@ -427,6 +620,22 @@ class GetLabObservationView(APIView):
              'title':obs.title,
              'notes':obs.notes
             })
+@extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description='Nursing observation details',
+                examples=[
+                    {
+                        'created_at': '2025-01-01T10:00:00Z',
+                        'made_by': 'Nurse Jane Doe',
+                        'title': 'Nursing Test Result',
+                        'notes': 'Notes for the nursing observation'
+                    }
+                ]
+            ),
+            404: OpenApiResponse(description='Data unavailable')
+        }
+    )
 class GetNurseObservationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
     def get(self, request,id):    
@@ -444,6 +653,29 @@ class GetNurseObservationView(APIView):
              'title':obs.title,
              'notes':obs.notes
             })             
+        
+@extend_schema(
+    tags=['Tickets'],
+    summary="Create new ticket",
+    description="Creates a new ticket for lab, radio, or nursing services",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'consultation_id': {'type': 'integer'},
+                'priority': {'type': 'string', 'enum': ['Low', 'Medium', 'Critical']},
+                'type': {'type': 'string', 'enum': ['Lab', 'Radio', 'Nursing']},
+                'title': {'type': 'string'},
+                'description': {'type': 'string'}
+            },
+            'required': ['consultation_id', 'priority', 'type', 'title', 'description']
+        }
+    },
+    responses={
+        201: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class CreateTicketView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -462,6 +694,39 @@ class CreateTicketView(APIView):
         except:
           return Response("creation failed")
 
+
+@extend_schema(
+    tags=['Prescriptions'],
+    summary="Create new prescription",
+    description="Creates a new prescription with medicines list",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'consultation_id': {'type': 'integer'},
+                'medicines_list': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {'type': 'string'},
+                            'dosage': {'type': 'string'},
+                            'duration': {'type': 'string'},
+                            'frequency': {'type': 'string'},
+                            'instructions': {'type': 'string'}
+                        }
+                    }
+                },
+                'notes': {'type': 'string'}
+            },
+            'required': ['consultation_id', 'medicines_list', 'notes']
+        }
+    },
+    responses={
+        201: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class CreatePrescriptionView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -481,6 +746,26 @@ class CreatePrescriptionView(APIView):
            return JsonResponse({'message': 'Prescription created successfully', 'prescription_id': prescription.id}, status=201)
         except:
           return Response("creation failed")
+      
+@extend_schema(
+    tags=['Consultations'],
+    summary="Archive consultation",
+    description="Archives a consultation with a final resume",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'consultation_id': {'type': 'integer'},
+                'resume': {'type': 'string'}
+            },
+            'required': ['consultation_id', 'resume']
+        }
+    },
+    responses={
+        201: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class ArchiveConsultationView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -498,7 +783,20 @@ class ArchiveConsultationView(APIView):
            consultation.save()
            return JsonResponse({'message': 'Consultation archived successfully', 'consultation_id': consultation_id}, status=201)
         except:
-          return Response("archiving failed")     
+          return Response("archiving failed") 
+      
+@extend_schema(
+    tags=['Prescriptions'],
+    summary="Get prescription details",
+    description="Retrieve detailed information about a specific prescription",
+    parameters=[
+        OpenApiParameter(name='prescription_id', type=int, location=OpenApiParameter.PATH, description='Prescription ID')
+    ],
+    responses={
+        200: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT
+    }
+)    
 class GetPrescriptionView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -532,6 +830,31 @@ class GetPrescriptionView(APIView):
         
         return JsonResponse(data, status=200)
           
+@extend_schema(
+    tags=['Doctor Profile'],
+    summary="Modify doctor profile",
+    description="Update doctor's personal information",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'gender': {'type': 'string'},
+                'nss': {'type': 'string'},
+                'address': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'password': {'type': 'string'},
+                'email': {'type': 'string'},
+                'image': {'type': 'string', 'format': 'binary'}
+            }
+        }
+    },
+    responses={
+        201: OpenApiTypes.OBJECT,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 
@@ -574,7 +897,18 @@ class ModifyMyUser(APIView):
         print(app_user.image.url)
         return JsonResponse({'message': 'Doctor modified successfully', 'user_id': app_user.id}, status=201)
               
-
+@extend_schema(
+    tags=['Utilities'],
+    summary="Generate QR Code",
+    description="Generates a QR code for a given NSS number",
+    parameters=[
+        OpenApiParameter(name='nss', type=str, location=OpenApiParameter.QUERY, description='NSS Number')
+    ],
+    responses={
+        200: OpenApiTypes.BINARY,
+        400: OpenApiTypes.OBJECT
+    }
+)
 class GenerateQRView(APIView):
     permission_classes = [IsAuthenticated, IsDoctor]
 

@@ -17,7 +17,37 @@ from rest_framework import status
 import qrcode
 from django.http import HttpResponse
 import io
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse
 
+@extend_schema(
+    tags=['Admin Dashboard'],
+    description='Get admin dashboard data including counts, statistics, and recent activity',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'admin_info': {
+                    'type': 'object',
+                    'properties': {
+                        'id': {'type': 'integer'},
+                        'name': {'type': 'string'},
+                        'hospital': {'type': 'string'},
+                        'address': {'type': 'string'},
+                        'phone_number': {'type': 'string'},
+                        'email': {'type': 'string'},
+                        'profile_image': {'type': 'string'},
+                        'workers_count': {'type': 'integer'},
+                        'patients_count': {'type': 'integer'}
+                    }
+                },
+                'role_counts': {'type': 'object'},
+                'top_staff': {'type': 'array'},
+                'stats': {'type': 'array'},
+                'recent_patients': {'type': 'array'}
+            }
+        }
+    }
+)
 class AdminOnlyView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -131,6 +161,47 @@ class AdminOnlyView(APIView):
        
         return JsonResponse(data)
     
+@extend_schema(
+    tags=['Patient Management'],
+    description='Create a new patient account',
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'address': {'type': 'string'},
+                'gender': {'type': 'string', 'enum': ['Male', 'Female']},
+                'nss': {'type': 'string'},
+                'date_of_birth': {'type': 'string', 'format': 'date'},
+                'place_of_birth': {'type': 'string'},
+                'emergency_contact_name': {'type': 'string'},
+                'emergency_contact_phone': {'type': 'string'},
+                'medical_condition': {'type': 'string'}
+            },
+            'required': [
+                'email', 'first_name', 'last_name', 'phone_number', 'address',
+                'gender', 'nss', 'date_of_birth', 'place_of_birth',
+                'emergency_contact_name', 'emergency_contact_phone', 'medical_condition'
+            ]
+        }
+    },
+    responses={
+        201: OpenApiResponse(
+            description='Patient created successfully',
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'user_id': {'type': 'integer'}
+                }
+            }
+        ),
+        400: OpenApiResponse(description='Invalid input or user already exists')
+    }
+)
 class CreatePatientView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -166,7 +237,47 @@ class CreatePatientView(APIView):
           return Response({"error": "user already exist"}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': appuser.id}, status=201)
        
-      
+ 
+@extend_schema(
+    tags=['Worker Management'],
+    description='Create a new worker account (doctor, nurse, etc.)',
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'role': {'type': 'string', 'enum': ['Doctor', 'Nurse', 'Radiologist', 'LabTechnician']},
+                'phone_number': {'type': 'string'},
+                'address': {'type': 'string'},
+                'gender': {'type': 'string', 'enum': ['Male', 'Female']},
+                'nss': {'type': 'string'},
+                'date_of_birth': {'type': 'string', 'format': 'date'},
+                'place_of_birth': {'type': 'string'},
+                'speciality': {'type': 'string'}
+            },
+            'required': [
+                'email', 'first_name', 'last_name', 'role', 'phone_number',
+                'address', 'gender', 'nss', 'date_of_birth', 'place_of_birth',
+                'speciality'
+            ]
+        }
+    },
+    responses={
+        201: OpenApiResponse(
+            description='Worker created successfully',
+            response={
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'user_id': {'type': 'integer'}
+                }
+            }
+        ),
+        400: OpenApiResponse(description='Invalid input or user already exists')
+    }
+)     
 class CreateWorkerView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -202,6 +313,36 @@ class CreateWorkerView(APIView):
           return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'User created successfully', 'user_id': appuser.id}, status=201)
 
+@extend_schema(
+    tags=['Patient Management'],
+    description='Get list of all patients in the hospital',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'patients': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'user_id': {'type': 'integer'},
+                            'name': {'type': 'string'},
+                            'created_at': {'type': 'string', 'format': 'date-time'},
+                            'nss': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'address': {'type': 'string'},
+                            'phone_number': {'type': 'string'},
+                            'emergency_contact_name': {'type': 'string'},
+                            'emergency_contact_phone': {'type': 'string'},
+                            'consultation_count': {'type': 'integer'},
+                            'profile_image': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 class GetPatientsList(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -231,7 +372,36 @@ class GetPatientsList(APIView):
        
         return JsonResponse({"patients":patients_serialized}, status=200)
       
-
+@extend_schema(
+    tags=['Worker Management'],
+    description='Get list of all workers in the hospital',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'workers': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'user_id': {'type': 'integer'},
+                            'name': {'type': 'string'},
+                            'role': {'type': 'string'},
+                            'speciality': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'phone_number': {'type': 'string'},
+                            'nss': {'type': 'string'},
+                            'address': {'type': 'string'},
+                            'created_at': {'type': 'string', 'format': 'date-time'},
+                            'profile_image': {'type': 'string'},
+                            'gender': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 class GetWorkersList(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -257,7 +427,24 @@ class GetWorkersList(APIView):
        
        
         return JsonResponse({"workers":workers_serialized}, status=200)
-      
+
+@extend_schema(
+    tags=['User Management'],
+    description='Delete a user account',
+    parameters=[
+        OpenApiParameter(
+            name='pk',
+            location=OpenApiParameter.PATH,
+            description='User ID to delete',
+            required=True,
+            type=int
+        )
+    ],
+    responses={
+        201: OpenApiResponse(description='User deleted successfully'),
+        404: OpenApiResponse(description='User not found')
+    }
+)     
 class DeleteUser(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -269,7 +456,45 @@ class DeleteUser(APIView):
         
         user.user.delete()
         return JsonResponse({'message': 'User deleted successfully'}, status=201)
-       
+
+
+@extend_schema(
+    tags=['Patient Management'],
+    description='Modify existing patient information',
+    parameters=[
+        OpenApiParameter(
+            name='pk',
+            location=OpenApiParameter.PATH,
+            description='Patient ID to modify',
+            required=True,
+            type=int
+        )
+    ],
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'address': {'type': 'string'},
+                'gender': {'type': 'string', 'enum': ['Male', 'Female']},
+                'nss': {'type': 'string'},
+                'date_of_birth': {'type': 'string', 'format': 'date'},
+                'place_of_birth': {'type': 'string'},
+                'emergency_contact_name': {'type': 'string'},
+                'emergency_contact_phone': {'type': 'string'},
+                'medical_condition': {'type': 'string'},
+                'image': {'type': 'string', 'format': 'binary'}
+            }
+        }
+    },
+    responses={
+        201: OpenApiResponse(description='Patient modified successfully'),
+        400: OpenApiResponse(description='Invalid input')
+    }
+)     
 class ModifyPatientView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -332,7 +557,44 @@ class ModifyPatientView(APIView):
           print(e)
           return Response({"error": "user already exist"}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'Patient modified successfully', 'user_id': appuser.id}, status=201)
-       
+
+
+@extend_schema(
+    tags=['Worker Management'],
+    description='Modify existing worker information',
+    parameters=[
+        OpenApiParameter(
+            name='pk',
+            location=OpenApiParameter.PATH,
+            description='Worker ID to modify',
+            required=True,
+            type=int
+        )
+    ],
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'address': {'type': 'string'},
+                'gender': {'type': 'string', 'enum': ['Male', 'Female']},
+                'nss': {'type': 'string'},
+                'date_of_birth': {'type': 'string', 'format': 'date'},
+                'place_of_birth': {'type': 'string'},
+                'speciality': {'type': 'string'},
+                'role': {'type': 'string'},
+                'image': {'type': 'string', 'format': 'binary'}
+            }
+        }
+    },
+    responses={
+        201: OpenApiResponse(description='Worker modified successfully'),
+        400: OpenApiResponse(description='Invalid input')
+    }
+)       
 class ModifyWorkerView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -393,7 +655,24 @@ class ModifyWorkerView(APIView):
           return Response({"error": f"user already exist , {e}"}, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse({'message': 'Worker modified successfully', 'user_id': appuser.id}, status=201)
        
-      
+@extend_schema(
+    tags=['User Management'],
+    description='Get current admin user information',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'hospital': {'type': 'string'},
+                'nss': {'type': 'string'},
+                'address': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'profile_image': {'type': 'string'}
+            }
+        }
+    }
+)  
 class getPatientView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -410,6 +689,30 @@ class getPatientView(APIView):
 
         }
         return JsonResponse(data)
+      
+@extend_schema(
+    tags=['User Management'],
+    description='Modify current admin user information',
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'hospital_name': {'type': 'string'},
+                'nss': {'type': 'string'},
+                'address': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'password': {'type': 'string'},
+                'email': {'type': 'string', 'format': 'email'},
+                'image': {'type': 'string', 'format': 'binary'}
+            }
+        }
+    },
+    responses={
+        201: OpenApiResponse(description='User modified successfully')
+    }
+)
 class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -456,7 +759,26 @@ class ModifyMyUser(APIView):
         print(app_user.image.url)
         return JsonResponse({'message': 'User modified successfully', 'user_id': app_user.id}, status=201)
       
-
+@extend_schema(
+    tags=['QR Code'],
+    description='Generate QR code for NSS',
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'nss': {'type': 'string'}
+            },
+            'required': ['nss']
+        }
+    },
+    responses={
+        200: OpenApiResponse(
+            description='QR code image',
+            response={'type': 'string', 'format': 'binary'}
+        ),
+        400: OpenApiResponse(description='NSS not provided')
+    }
+)
 class GenerateQRView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
@@ -483,7 +805,25 @@ class GenerateQRView(APIView):
       buffer.seek(0)
 
       return HttpResponse(buffer, content_type='image/png')
-    
+   
+@extend_schema(
+    tags=['User Management'],
+    description='Get current user information',
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'first_name': {'type': 'string'},
+                'last_name': {'type': 'string'},
+                'hospital': {'type': 'string'},
+                'nss': {'type': 'string'},
+                'address': {'type': 'string'},
+                'phone_number': {'type': 'string'},
+                'profile_image': {'type': 'string'}
+            }
+        }
+    }
+) 
 class getUserView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 

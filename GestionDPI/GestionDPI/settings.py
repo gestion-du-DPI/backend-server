@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
     'django_extensions',
+    'drf_spectacular'
+    
     
 ]
 
@@ -150,7 +152,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
 }
+    
+
 
 
 # Configure JWT settings
@@ -180,6 +186,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

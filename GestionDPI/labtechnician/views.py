@@ -12,8 +12,24 @@ from users.serializers import *
 from GestionDPI.permissions import IsLabTechnician
 import cloudinary
 from django.core.paginator import Paginator
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse
 
-
+@extend_schema(
+        summary="Get Open Lab Tickets",
+        description="Retrieve a list of open lab tickets for the authenticated user based on their hospital.",
+        responses={
+            200: TicketSerializer(many=True),  # Output schema
+        },
+        parameters=[
+            OpenApiParameter(
+                name="Authorization",
+                location=OpenApiParameter.HEADER,
+                description="Bearer token for authentication",
+                required=True,
+                type=str,
+            )
+        ],
+)
 class GetOpenTicketsView(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -65,7 +81,25 @@ class GetOpenTicketsView(APIView):
         # Return the serialized data as a JSON response
         return Response(serializer.data)
 
-
+@extend_schema(
+    summary="Submit Lab Result",
+    description="Submit a lab result for a specific ticket and mark it as closed.",
+    request={
+        "application/json": OpenApiExample(
+            name="Submit Result Example",
+            value={
+                "ticket_id": 123,
+                "title": "Hemoglobin Analysis",
+                "notes": "Patient shows elevated levels of hemoglobin.",
+            },
+        ),
+    },
+    responses={
+        200: OpenApiResponse(description="Lab result submitted successfully."),
+        400: OpenApiResponse(description="Bad request or missing parameters."),
+        404: OpenApiResponse(description="Ticket not found."),
+    },
+)
 class SubmitResult(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -108,7 +142,33 @@ class SubmitResult(APIView):
 
         return Response(status=rest_framework.status.HTTP_200_OK)
 
-
+@extend_schema(
+    summary="Add Image to Lab Result",
+    description="Upload an image associated with a lab result for a ticket.",
+    request={
+        "multipart/form-data": OpenApiExample(
+            name="Image Upload Example",
+            value={
+                "ticket_id": 123,
+                "image": "File object for the image.",
+            },
+        ),
+    },
+    responses={
+        201: OpenApiResponse(
+            description="Image uploaded successfully.",
+            examples={
+                "example": {
+                    "id": 1,
+                    "message": "Image uploaded successfully",
+                    "image_url": "https://example.com/image.jpg",
+                }
+            },
+        ),
+        400: OpenApiResponse(description="Bad request or missing parameters."),
+        404: OpenApiResponse(description="Ticket not found."),
+    },
+)
 class AddImage(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -181,7 +241,31 @@ class DelImage(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    summary="Get Lab Result",
+    description="Retrieve all observations and images associated with a lab result for a ticket.",
+    parameters=[
+        OpenApiParameter(
+            name="ticket_id",
+            location=OpenApiParameter.PATH,
+            description="ID of the ticket to fetch results for.",
+            required=True,
+            type=int,
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Success",
+            examples={
+                "example": [
+                    {"images": [{"id": 1, "image_url": "https://example.com/img.jpg"}]},
+                    {"observations": [{"title": "Blood Test", "notes": "Normal levels"}]},
+                ]
+            },
+        ),
+        404: OpenApiResponse(description="Ticket not found."),
+    },
+)
 class GetResult(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -221,7 +305,36 @@ class GetResult(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    summary="List Patients",
+    description="Retrieve a paginated list of patients for the current user's hospital.",
+    parameters=[
+        OpenApiParameter(
+            name="page",
+            location=OpenApiParameter.QUERY,
+            description="Page number for pagination.",
+            required=False,
+            type=int,
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="List of patients.",
+            examples={
+                "example": {
+                    "count": 50,
+                    "num_pages": 5,
+                    "current_page": 1,
+                    "results": [
+                        {"id": 1, "name": "John Doe", "user_id": 5},
+                        {"id": 2, "name": "Jane Doe", "user_id": 6},
+                    ],
+                }
+            },
+        ),
+        400: OpenApiResponse(description="Invalid page or request."),
+    },
+)
 class GetPatientListView(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -276,7 +389,30 @@ class GetPatientListView(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    summary="Get Patient by NSS",
+    description="Retrieve detailed information about a patient by their NSS (National Social Security) number.",
+    responses={
+        200: PatientSerializer,  # Output schema
+        404: OpenApiResponse(description="Patient not found"),
+    },
+    parameters=[
+        OpenApiParameter(
+            name="Authorization",
+            location=OpenApiParameter.HEADER,
+            description="Bearer token for authentication",
+            required=True,
+            type=str,
+        ),
+        OpenApiParameter(
+            name="nss",
+            location=OpenApiParameter.PATH,
+            description="National Social Security number of the patient",
+            required=True,
+            type=str,
+        ),
+    ],
+)
 class GetPatientByNSS(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -306,7 +442,30 @@ class GetPatientByNSS(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    summary="Get Ticket History",
+    description="Retrieve a paginated list of closed lab tickets for the authenticated user's hospital.",
+    responses={
+        200: TicketSerializer(many=True),  # Output schema
+        400: OpenApiResponse(description="Invalid page parameter"),
+    },
+    parameters=[
+        OpenApiParameter(
+            name="Authorization",
+            location=OpenApiParameter.HEADER,
+            description="Bearer token for authentication",
+            required=True,
+            type=str,
+        ),
+        OpenApiParameter(
+            name="page",
+            location=OpenApiParameter.QUERY,
+            description="Page number for paginated results (default is 1)",
+            required=False,
+            type=int,
+        ),
+    ],
+)
 class GetTicketHistoryView(APIView):
     permission_classes = [IsLabTechnician]
 
@@ -368,7 +527,30 @@ class GetTicketHistoryView(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    summary="Get Ticket by ID",
+    description="Retrieve detailed information about a specific closed lab ticket by its ID.",
+    responses={
+        200: TicketSerializer,  # Output schema
+        404: OpenApiResponse(description="Ticket not found"),
+    },
+    parameters=[
+        OpenApiParameter(
+            name="Authorization",
+            location=OpenApiParameter.HEADER,
+            description="Bearer token for authentication",
+            required=True,
+            type=str,
+        ),
+        OpenApiParameter(
+            name="id",
+            location=OpenApiParameter.PATH,
+            description="ID of the ticket",
+            required=True,
+            type=int,
+        ),
+    ],
+)
 class GetTicketByID(APIView):
     permission_classes = [IsLabTechnician]
 

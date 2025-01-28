@@ -12,11 +12,48 @@ from GestionDPI.permissions import IsPatient
 from doctor.models import  LabResult, RadioResult, NursingResult
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
-
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse,OpenApiTypes
 
 class PatientDashboardView(APIView):
     permission_classes = [IsAuthenticated,IsPatient]
-
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Returns patient information and list of consultations",
+                examples=[
+                    {
+                        "patient_info": {
+                            "name": "John Doe",
+                            "hospital": "General Hospital",
+                            "gender": "Male",
+                            "nss": "123456789",
+                            "date_of_birth": "1990-01-01",
+                            "place_of_birth": "City A",
+                            "address": "123 Street",
+                            "phone_number": "+1234567890",
+                            "emergency_contact_name": "Jane Doe",
+                            "emergency_contact_phone": "+0987654321",
+                            "medical_condition": "Hypertension"
+                        },
+                        "consultations": [
+                            {
+                                "consultation_id": 1,
+                                "archived": False,
+                                "date": "2024-01-01",
+                                "doctor_name": "Dr. Smith",
+                                "lasted_for": "-----",
+                                "sgph": "Pending",
+                                "reason": "Fever",
+                                "priority": "High"
+                            }
+                        ]
+                    }
+                ]
+            )
+        },
+        description="Retrieve the patient's profile and their consultations.",
+        tags=["Patient Dashboard"]
+    )
     def get(self, request):
         user = request.user
         
@@ -74,7 +111,7 @@ class PatientDashboardView(APIView):
 
 class ConsultationDetailView(APIView):
     permission_classes = [IsAuthenticated,IsPatient]
-
+    
     def get(self, request, consultation_id):
         user = request.user
 
@@ -196,11 +233,42 @@ class ConsultationDetailView(APIView):
 
 
 
-
+@extend_schema(
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "first_name": {"type": "string"},
+                    "last_name": {"type": "string"},
+                    "gender": {"type": "string"},
+                    "nss": {"type": "string"},
+                    "address": {"type": "string"},
+                    "phone_number": {"type": "string"},
+                    "password": {"type": "string", "format": "password"},
+                    "email": {"type": "string", "format": "email"}
+                }
+            },
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "image": {"type": "string", "format": "binary"}
+                }
+            }
+        },
+        responses={
+            201: OpenApiResponse(
+                description="User details successfully modified.",
+                examples={"message": "User modified successfully", "user_id": 1}
+            ),
+            400: OpenApiResponse(description="Invalid input."),
+        },
+        description="Modify details of the authenticated user.",
+        tags=["User Management"]
+    )
 class ModifyMyUser(APIView):
     permission_classes = [IsAuthenticated, IsPatient]
 
-   
+    
     def patch(self, request, format=None):
        
         app_user = AppUser.objects.get(pk=request.user.appuser.id)  

@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from GestionDPI.views import CustomTokenObtainPairView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+
 urlpatterns = [
     path('settings/', admin.site.urls),
     path('api/token', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -27,5 +29,9 @@ urlpatterns = [
     path('nurse/', include('nurse.urls')),
     path('patient/',include('patient.urls')),
     path('sgph/',include('patient.urls')),
-
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
+
+

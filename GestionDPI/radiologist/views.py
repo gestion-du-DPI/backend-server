@@ -12,11 +12,16 @@ from users.serializers import *
 from GestionDPI.permissions import IsRadiologist
 import cloudinary
 from django.core.paginator import Paginator
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, OpenApiResponse,OpenApiTypes
 
-
+@extend_schema(
+        summary="Retrieve Open Tickets",
+        description="Fetch a list of open tickets of type 'Radio' for the current user's hospital.",
+        responses={200: TicketSerializer(many=True)},
+    )
 class GetOpenTicketsView(APIView):
     permission_classes = [IsRadiologist]
-
+    
     def get(self, request):
 
         # Fetch data for the specific user (assuming a foreign key relationship to the user)
@@ -66,7 +71,22 @@ class GetOpenTicketsView(APIView):
 
 class SubmitResult(APIView):
     permission_classes = [IsRadiologist]
-
+    @extend_schema(
+        summary="Submit Radio Result",
+        description="Submit a result for a specific ticket, including observations and notes.",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "integer"},
+                    "title": {"type": "string"},
+                    "notes": {"type": "string"},
+                },
+                "required": ["ticket_id", "title"],
+            }
+        },
+        responses={200: {"type": "string", "example": "Result submitted successfully."}},
+    )
     def post(self, request):
 
         data = request.data
@@ -108,7 +128,30 @@ class SubmitResult(APIView):
 
 class AddImage(APIView):
     permission_classes = [IsRadiologist]
-
+    @extend_schema(
+        summary="Add Image to Radio Result",
+        description="Upload an image related to a specific ticket's radio result.",
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "ticket_id": {"type": "integer"},
+                    "image": {"type": "string", "format": "binary"},
+                },
+                "required": ["ticket_id", "image"],
+            }
+        },
+        responses={
+            201: {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "message": {"type": "string"},
+                    "image_url": {"type": "string"},
+                },
+            }
+        },
+    )
     def post(self, request):
 
         data = request.data
@@ -154,7 +197,12 @@ class AddImage(APIView):
 
 class DelImage(APIView):
     permission_classes = [IsRadiologist]
-
+    @extend_schema(
+        summary="Delete Image",
+        description="Delete an image from the radio result.",
+        parameters=[OpenApiParameter("id", int, description="ID of the image to delete.")],
+        responses={200: {"type": "string", "example": "Image deleted successfully."}},
+    )
     def delete(self, request, id):
 
         if id is None:
@@ -183,7 +231,22 @@ class DelImage(APIView):
 
 class GetResult(APIView):
     permission_classes = [IsRadiologist]
-
+    @extend_schema(
+        summary="Get Radio Result Details",
+        description="Fetch observations and images related to a specific ticket's radio result.",
+        parameters=[OpenApiParameter("ticket_id", int, description="ID of the ticket.")],
+        responses={
+            200: {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        
+                    },
+                },
+            }
+        },
+    )
     def get(self, request, ticket_id):
 
         if ticket_id is None:
@@ -223,7 +286,26 @@ class GetResult(APIView):
 
 class GetPatientListView(APIView):
     permission_classes = [IsRadiologist]
-
+    @extend_schema(
+        summary="Get Patient List",
+        description="Fetch a paginated list of patients for the current user's hospital.",
+        parameters=[
+            OpenApiParameter(
+                "page", int, description="Page number for paginated results. Default is 1."
+            )
+        ],
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "count": {"type": "integer"},
+                    "num_pages": {"type": "integer"},
+                    "current_page": {"type": "integer"},
+                    
+                },
+            }
+        },
+    )
     def get(self, request):
         # Filter patients by the hospital of the current user
         patients = Patient.objects.filter(
@@ -275,7 +357,18 @@ class GetPatientListView(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="nss",
+            description="National Social Security number of the patient",
+            required=True,
+            type=OpenApiTypes.STR,
+        )
+    ],
+    responses={200: PatientSerializer},
+    description="Retrieve patient details using their NSS",
+)
 class GetPatientByNSS(APIView):
     permission_classes = [IsRadiologist]
 
@@ -305,7 +398,18 @@ class GetPatientByNSS(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    responses={200: TicketSerializer(many=True)},
+    parameters=[
+        OpenApiParameter(
+            name="page",
+            description="Page number for paginated results",
+            required=False,
+            type=OpenApiTypes.INT,
+        )
+    ],
+    description="Retrieve a paginated list of closed tickets for the radiologist",
+)
 class GetTicketHistoryView(APIView):
     permission_classes = [IsRadiologist]
 
@@ -367,7 +471,18 @@ class GetTicketHistoryView(APIView):
             status=rest_framework.status.HTTP_200_OK,
         )
 
-
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="id",
+            description="ID of the ticket",
+            required=True,
+            type=OpenApiTypes.INT,
+        )
+    ],
+    responses={200: TicketSerializer},
+    description="Retrieve details of a specific closed ticket by its ID",
+)
 class GetTicketByID(APIView):
     permission_classes = [IsRadiologist]
 
